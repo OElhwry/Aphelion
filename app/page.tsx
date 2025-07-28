@@ -4,16 +4,16 @@ import { useEffect, useRef, useState } from "react"
 import { motion, useScroll, useTransform } from "framer-motion"
 
 const planets = [
-  { name: "Sun", image: "/images/sun.png", position: 1000, color: "#FDB813", size: 800, distanceFromSun: 0 },
-  { name: "Mercury", image: "/images/mercury.png", position: 1800, color: "#8C7853", size: 320, distanceFromSun: 58 },
-  { name: "Venus", image: "/images/venus.png", position: 2600, color: "#FFC649", size: 380, distanceFromSun: 108 },
-  { name: "Earth", image: "/images/earth-new.png", position: 3400, color: "#6B93D6", size: 400, distanceFromSun: 150 },
-  { name: "Mars", image: "/images/mars.png", position: 4200, color: "#C1440E", size: 340, distanceFromSun: 228 },
-  { name: "Jupiter", image: "/images/jupiter.png", position: 5200, color: "#D8CA9D", size: 720, distanceFromSun: 778 },
-  { name: "Saturn", image: "/images/saturn.png", position: 6400, color: "#FAD5A5", size: 640, distanceFromSun: 1432 },
-  { name: "Uranus", image: "/images/uranus.png", position: 7600, color: "#4FD0E7", size: 480, distanceFromSun: 2867 },
-  { name: "Neptune", image: "/images/neptune.png", position: 8800, color: "#4B70DD", size: 460, distanceFromSun: 4515 },
-  { name: "Pluto", image: "/images/pluto.png", position: 9600, color: "#D4B896", size: 280, distanceFromSun: 5906 },
+  { name: "Sun", image: "/images/Sun.png", position: 1000, color: "#FDB813", size: 800, distanceFromSun: 0 },
+  { name: "Mercury", image: "/images/Mercury.png", position: 1800, color: "#8C7853", size: 320, distanceFromSun: 58 },
+  { name: "Venus", image: "/images/Venus.png", position: 2600, color: "#FFC649", size: 380, distanceFromSun: 108 },
+  { name: "Earth", image: "/images/Earth.png", position: 3400, color: "#6B93D6", size: 400, distanceFromSun: 150 },
+  { name: "Mars", image: "/images/Mars.png", position: 4200, color: "#C1440E", size: 340, distanceFromSun: 228 },
+  { name: "Jupiter", image: "/images/Jupiter.png", position: 5200, color: "#D8CA9D", size: 720, distanceFromSun: 778 },
+  { name: "Saturn", image: "/images/Saturn.png", position: 6400, color: "#FAD5A5", size: 640, distanceFromSun: 1432 },
+  { name: "Uranus", image: "/images/Uranus.png", position: 7600, color: "#4FD0E7", size: 480, distanceFromSun: 2867 },
+  { name: "Neptune", image: "/images/Neptune.png", position: 8800, color: "#4B70DD", size: 460, distanceFromSun: 4515 },
+  { name: "Pluto", image: "/images/Pluto.png", position: 9600, color: "#D4B896", size: 280, distanceFromSun: 5906 },
 ]
 
 function StarField() {
@@ -53,7 +53,7 @@ function StarField() {
               backgroundColor: useTransform(scrollYProgress, [0, 0.5, 1], ["#ffffff", "#cccccc", "#666666"]),
               opacity: useTransform(
                 [starBrightness, shouldShow(star.fadeThreshold)],
-                ([brightness, show]) => star.baseOpacity * brightness * show,
+                (values: number[]) => star.baseOpacity * values[0] * values[1],
               ),
             }}
             animate={{
