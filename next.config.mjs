@@ -14,3 +14,5 @@ const nextConfig = {
   basePath: "/Aphelion",
   assetPrefix: "/Aphelion/",
 }
+
+export default nextConfig
