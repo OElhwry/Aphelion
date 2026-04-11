@@ -10,9 +10,9 @@ const orbitron = Orbitron({
 })
 
 export const metadata: Metadata = {
-  title: "Explore Space - Solar System Journey",
-  description: "An interactive journey through our solar system",
-    generator: 'v0.dev'
+  title: "PERIHELION — Solar System Explorer",
+  description: "A cinematic journey through our solar system — 10 worlds, 50 questions, 5.9 billion kilometres.",
+  generator: "v0.dev",
 }
 
 export default function RootLayout({

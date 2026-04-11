@@ -2,37 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --font-orbitron: "Orbitron", monospace;
-  }
-
-  .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -52,11 +25,8 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --radius: 0.5rem;
+    --font-orbitron: "Orbitron", monospace;
   }
 }
 
@@ -66,49 +36,107 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-orbitron), monospace;
+    background-color: #000510;
+    color: #e8f4f8;
+    overflow-x: hidden;
   }
 }
 
-@layer utilities {
-  .font-orbitron {
-    font-family: var(--font-orbitron), monospace;
-  }
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #000510; }
+::-webkit-scrollbar-thumb { background: #1e40af; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+
+html { scroll-behavior: smooth; }
+
+/* Glow utilities */
+.glow-blue  { box-shadow: 0 0 20px rgba(59,130,246,0.5), 0 0 40px rgba(59,130,246,0.2); }
+.glow-text  { text-shadow: 0 0 30px currentColor, 0 0 60px currentColor; }
+.glow-sm    { text-shadow: 0 0 12px currentColor; }
+
+/* Scanline overlay for HUD elements */
+.scanline {
+  position: relative;
+  overflow: hidden;
+}
+.scanline::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,212,255,0.02) 2px,
+    rgba(0,212,255,0.02) 4px
+  );
+  pointer-events: none;
 }
 
-/* Custom scrollbar for webkit browsers */
-::-webkit-scrollbar {
-  width: 8px;
+/* HUD border style */
+.hud-border {
+  border: 1px solid rgba(0,212,255,0.25);
+  box-shadow: 0 0 15px rgba(0,212,255,0.1), inset 0 0 15px rgba(0,212,255,0.03);
 }
 
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
+/* Planet ring for Saturn */
+.saturn-ring-wrapper {
+  perspective: 400px;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #2563eb;
-  border-radius: 4px;
+/* Quiz option states */
+.quiz-option {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.quiz-option:hover:not(.answered) {
+  border-color: rgba(0,212,255,0.6) !important;
+  background: rgba(0,212,255,0.08) !important;
+}
+.quiz-option.correct {
+  border-color: rgba(34,197,94,0.8) !important;
+  background: rgba(34,197,94,0.12) !important;
+}
+.quiz-option.incorrect {
+  border-color: rgba(239,68,68,0.8) !important;
+  background: rgba(239,68,68,0.12) !important;
+}
+.quiz-option.reveal-correct {
+  border-color: rgba(34,197,94,0.5) !important;
+  background: rgba(34,197,94,0.06) !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #3b82f6;
+/* Nebula background animation */
+@keyframes nebula-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(20px, -15px) scale(1.05); }
+  66%  { transform: translate(-10px, 20px) scale(0.97); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+.nebula { animation: nebula-drift 20s ease-in-out infinite; }
+
+/* Pulse ring animation for Sun */
+@keyframes pulse-ring {
+  0%   { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+.pulse-ring {
+  animation: pulse-ring 2.5s ease-out infinite;
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+/* Orrery orbital animations */
+@keyframes orbit-cw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes orbit-ccw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
 }
 
-/* Prevent horizontal scroll */
-body {
-  overflow-x: hidden;
-}
-
-/* Futuristic glow effects */
-.glow-text {
-  text-shadow: 0 0 10px currentColor;
-}
-
-.glow-border {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+/* Planet hover glow pulse */
+@keyframes planet-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.05); }
 }
