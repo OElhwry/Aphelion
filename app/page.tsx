@@ -783,13 +783,14 @@ const ASTRO_IMAGES = [
   "/astronauts/astronaut4.jpg",
 ]
 
+
 function IntroScreen({ onEnter }: { onEnter: () => void }) {
   const [bgIdx, setBgIdx] = useState(0)
-  const [imgLoaded, setImgLoaded] = useState<boolean[]>([true, false, false, false])
+  const [imgLoaded, setImgLoaded] = useState<boolean[]>([false, false, false, false])
 
   // Cycle backgrounds every 30 s
   useEffect(() => {
-    const t = setInterval(() => setBgIdx((i) => (i + 1) % ASTRO_IMAGES.length), 30000)
+    const t = setInterval(() => setBgIdx((i) => (i + 1) % ASTRO_IMAGES.length), 5000)
     return () => clearInterval(t)
   }, [])
 
@@ -799,7 +800,15 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
   const anyLoaded = imgLoaded.some(Boolean)
 
   return (
-    <div className="fixed inset-0 overflow-hidden" style={{ background: "#000510" }}>
+        <div
+      className="fixed inset-0 overflow-hidden"
+      style={{
+        background: "#000510",
+        backgroundImage: "url(/astronauts/astronaut1.jpg)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
 
       {/* ── Astronaut photo carousel ── */}
       {ASTRO_IMAGES.map((src, i) => (
@@ -864,7 +873,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
             <div className="h-px w-10 bg-gradient-to-r from-transparent to-cyan-400/60" />
             <span className="text-cyan-400/70 text-[10px] tracking-[0.45em]"
               style={{ fontFamily: "var(--font-orbitron)" }}>
-              PERIHELION · SOLAR SYSTEM EXPLORER
+              APHELION · SOLAR SYSTEM EXPLORER
             </span>
             <div className="h-px w-10 bg-gradient-to-l from-transparent to-cyan-400/60" />
           </motion.div>
