@@ -776,11 +776,13 @@ function CSSPlanet({ name, size, animate: doAnimate = false }: { name: string; s
 // ─── Intro Screen ─────────────────────────────────────────────────────────────
 // Astronaut images: place 4 files at public/astronauts/photo-1.jpg … photo-4.jpg
 
+const basePath = process.env.NODE_ENV === "production" ? "/Aphelion" : ""
+
 const ASTRO_IMAGES = [
-  "/astronauts/astronaut1.jpg",
-  "/astronauts/astronaut2.jpg",
-  "/astronauts/astronaut3.jpg",
-  "/astronauts/astronaut4.jpg",
+  `${basePath}/astronauts/astronaut1.jpg`,
+  `${basePath}/astronauts/astronaut2.jpg`,
+  `${basePath}/astronauts/astronaut3.jpg`,
+  `${basePath}/astronauts/astronaut4.jpg`,
 ]
 
 
@@ -804,7 +806,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
       className="fixed inset-0 overflow-hidden"
       style={{
         background: "#000510",
-        backgroundImage: "url(/astronauts/astronaut1.jpg)",
+        backgroundImage: `url(${basePath}/astronauts/astronaut1.jpg)`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
