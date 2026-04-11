@@ -785,11 +785,11 @@ const ASTRO_IMAGES = [
 
 function IntroScreen({ onEnter }: { onEnter: () => void }) {
   const [bgIdx, setBgIdx] = useState(0)
-  const [imgLoaded, setImgLoaded] = useState<boolean[]>([false, false, false, false])
+  const [imgLoaded, setImgLoaded] = useState<boolean[]>([true, false, false, false])
 
-  // Cycle backgrounds every 5 s
+  // Cycle backgrounds every 30 s
   useEffect(() => {
-    const t = setInterval(() => setBgIdx((i) => (i + 1) % ASTRO_IMAGES.length), 5000)
+    const t = setInterval(() => setBgIdx((i) => (i + 1) % ASTRO_IMAGES.length), 30000)
     return () => clearInterval(t)
   }, [])
 
@@ -851,7 +851,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
             boxShadow: "0 0 80px rgba(0,212,255,0.06), 0 0 160px rgba(124,58,237,0.04), inset 0 1px 0 rgba(255,255,255,0.06)",
           }}
           initial={{ opacity: 0, y: 40, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
+          animate={{ opacity: 0.75, y: 0, scale: 1 }}
           transition={{ duration: 1.2, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
           {/* App name badge */}
