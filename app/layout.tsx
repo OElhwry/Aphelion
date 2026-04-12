@@ -2,7 +2,6 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Orbitron } from "next/font/google"
 import "./globals.css"
-import Image from "next/image"
 
 const orbitron = Orbitron({
   subsets: ["latin"],
@@ -14,7 +13,7 @@ export const metadata: Metadata = {
   title: "Aphelion - Solar System Explorer",
   description: "A cinematic journey through our solar system — 10 worlds, 50 questions, 5.9 billion kilometres.",
     icons: {
-    icon: "/Aphelion/astronauts/aphelion.jpg",
+    icon: "/astronauts/aphelion.jpg",
   },
 }
 

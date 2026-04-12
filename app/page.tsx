@@ -776,7 +776,7 @@ function CSSPlanet({ name, size, animate: doAnimate = false }: { name: string; s
 // ─── Intro Screen ─────────────────────────────────────────────────────────────
 // Astronaut images: place 4 files at public/astronauts/photo-1.jpg … photo-4.jpg
 
-const basePath = process.env.NODE_ENV === "production" ? "/Aphelion" : ""
+const basePath = ""
 
 const ASTRO_IMAGES = [
   `${basePath}/astronauts/astronaut1.jpg`,
@@ -2135,7 +2135,7 @@ type ExploreMode = "journey" | "orrery"
 
 export default function SpaceExploration() {
   const [view, setView] = useState<View>("intro")
-  const [exploreMode, setExploreMode] = useState<ExploreMode>("journey")
+  const [exploreMode, setExploreMode] = useState<ExploreMode>("orrery")
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetData | null>(null)
 
   const handleEnter = useCallback(() => setView("journey"), [])
