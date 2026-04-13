@@ -776,69 +776,36 @@ function CSSPlanet({ name, size, animate: doAnimate = false }: { name: string; s
 // ─── Intro Screen ─────────────────────────────────────────────────────────────
 // Astronaut images: place 4 files at public/astronauts/photo-1.jpg … photo-4.jpg
 
-const basePath = ""
-
-const ASTRO_IMAGES = [
-  `${basePath}/astronauts/astronaut1.jpg`,
-]
-
-
 function IntroScreen({ onEnter }: { onEnter: () => void }) {
-  const [bgIdx, setBgIdx] = useState(0)
-  const [imgLoaded, setImgLoaded] = useState<boolean[]>([false])
-
-  // Cycle backgrounds every 30 s
-  useEffect(() => {
-    const t = setInterval(() => setBgIdx((i) => (i + 1) % ASTRO_IMAGES.length), 5000)
-    return () => clearInterval(t)
-  }, [])
-
-  const markLoaded = (i: number) =>
-    setImgLoaded((prev) => { const n = [...prev]; n[i] = true; return n })
-
-  const anyLoaded = imgLoaded.some(Boolean)
-
   return (
         <div
       className="fixed inset-0 overflow-hidden"
       style={{
         background: "#000510",
-        backgroundImage: `url(${basePath}/astronauts/astronaut1.jpg)`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
       }}
     >
 
       {/* ── Astronaut photo carousel ── */}
-      {ASTRO_IMAGES.map((src, i) => (
-        <div key={src}>
-          {/* Preload silently */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt="" className="hidden" onLoad={() => markLoaded(i)} />
+      <motion.div
+        className="absolute -inset-6"
+        aria-hidden="true"
+        animate={{
+          x: ["-0.7%", "0.7%", "-0.7%"],
+          y: ["0.12%", "-0.12%", "0.12%"],
+        }}
+        transition={{
+          duration: 42,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        style={{
+          backgroundImage: "url(/astronauts/astronaut1.jpg)",
+          backgroundSize: "cover",
+          backgroundPosition: "center 30%",
+          willChange: "transform",
+        }}
+      />
 
-          <motion.div
-            className="absolute inset-0"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: i === bgIdx && imgLoaded[i] ? 1 : 0 }}
-            transition={{ duration: 1.8, ease: "easeInOut" }}
-            style={{
-              backgroundImage: `url(${src})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center 30%",
-            }}
-          />
-        </div>
-      ))}
-
-      {/* Fallback star field while images load */}
-      {!anyLoaded && Array.from({ length: 200 }).map((_, i) => (
-        <div key={i} className="absolute rounded-full bg-white pointer-events-none"
-          style={{
-            left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`,
-            width: Math.random() * 2 + 0.4, height: Math.random() * 2 + 0.4,
-            opacity: Math.random() * 0.6 + 0.1,
-          }} />
-      ))}
 
       {/* Multi-layer dark overlay so text stays readable */}
       <div className="absolute inset-0"
@@ -959,26 +926,6 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
             </span>
           </motion.button>
 
-          {/* Image indicators */}
-          <motion.div
-            className="flex justify-center gap-1.5 mt-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 2 }}
-          >
-            {ASTRO_IMAGES.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setBgIdx(i)}
-                className="transition-all duration-300 rounded-full"
-                style={{
-                  width: i === bgIdx ? 20 : 6,
-                  height: 6,
-                  background: i === bgIdx ? "#00d4ff" : "rgba(255,255,255,0.2)",
-                }}
-              />
-            ))}
-          </motion.div>
         </motion.div>
       </div>
     </div>
@@ -1666,7 +1613,7 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
 function ViewToggle({ mode, onChange }: { mode: "journey" | "orrery"; onChange: (m: "journey" | "orrery") => void }) {
   return (
     <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-black/80 backdrop-blur-xl rounded-full px-1.5 py-1.5 hud-border">
-      {(["journey", "orrery"] as const).map((m) => (
+      {(["orrery", "journey"] as const).map((m) => (
         <button
           key={m}
           onClick={() => onChange(m)}
