@@ -780,15 +780,12 @@ const basePath = ""
 
 const ASTRO_IMAGES = [
   `${basePath}/astronauts/astronaut1.jpg`,
-  `${basePath}/astronauts/astronaut2.jpg`,
-  `${basePath}/astronauts/astronaut3.jpg`,
-  `${basePath}/astronauts/astronaut4.jpg`,
 ]
 
 
 function IntroScreen({ onEnter }: { onEnter: () => void }) {
   const [bgIdx, setBgIdx] = useState(0)
-  const [imgLoaded, setImgLoaded] = useState<boolean[]>([false, false, false, false])
+  const [imgLoaded, setImgLoaded] = useState<boolean[]>([false])
 
   // Cycle backgrounds every 30 s
   useEffect(() => {
