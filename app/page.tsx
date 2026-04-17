@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import { motion, useScroll, useTransform, AnimatePresence, useInView } from "framer-motion"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -816,7 +817,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
       {/* ── Glassmorphism card ── */}
       <div className="absolute inset-0 flex items-center justify-center px-6">
         <motion.div
-          className="w-full text-center py-12 px-10 rounded-3xl"
+          className="w-full text-center py-8 sm:py-12 px-5 sm:px-10 rounded-2xl sm:rounded-3xl"
           style={{
             maxWidth: 620,
             background: "rgba(0, 5, 16, 0.68)",
@@ -831,7 +832,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
         >
           {/* App name badge */}
           <motion.div
-            className="inline-flex items-center gap-3 mb-8"
+            className="inline-flex items-center gap-3 mb-5 sm:mb-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
@@ -878,7 +879,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
             Welcome aboard. I&apos;m your guide through the cosmos.
           </motion.p>
           <motion.p
-            className="mb-10 leading-relaxed"
+            className="mb-7 sm:mb-10 leading-relaxed"
             style={{
               fontFamily: "'Inter', sans-serif",
               fontSize: "clamp(0.85rem, 1.8vw, 1rem)",
@@ -897,7 +898,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
 
           {/* CTA */}
           <motion.button
-            className="relative group px-12 py-4 rounded-full text-white font-semibold overflow-hidden"
+            className="relative group w-full sm:w-auto px-8 sm:px-12 py-4 rounded-full text-white font-semibold overflow-hidden min-h-[52px]"
             style={{
               fontFamily: "var(--font-orbitron)",
               fontSize: "0.8rem",
@@ -936,6 +937,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
 // Rendered at the root level so it never unmounts during journey scrolling.
 
 function DistanceHUD() {
+  const isMobile = useIsMobile()
   const { scrollY } = useScroll()
   const [dist, setDist] = useState(0)
   const [currentPlanet, setCurrentPlanet] = useState(PLANETS[0])
@@ -964,13 +966,14 @@ function DistanceHUD() {
 
   return (
     <div
-      className="hud-border scanline rounded-2xl p-5 bg-black/85 backdrop-blur-xl select-none"
+      className="hud-border scanline rounded-xl sm:rounded-2xl bg-black/85 backdrop-blur-xl select-none"
       style={{
         position: "fixed",
-        top: 76,           /* sits just below the 44px toggle + gap */
-        right: 20,
-        width: 216,
-        zIndex: 9999,      /* always on top, no z-index wars */
+        top: isMobile ? 64 : 76,
+        right: isMobile ? 8 : 20,
+        width: isMobile ? 158 : 216,
+        padding: isMobile ? "10px 12px" : "20px",
+        zIndex: 9999,
       }}
     >
       {/* Planet colour accent bar */}
@@ -1015,10 +1018,12 @@ function DistanceHUD() {
 // ─── Journey planet card ──────────────────────────────────────────────────────
 
 function JourneyPlanet({ planet, onSelect }: { planet: PlanetData; index?: number; onSelect: () => void }) {
+  const isMobile = useIsMobile()
   const [hovered, setHovered] = useState(false)
   const sectionRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(sectionRef, { once: true, margin: "-180px" })
-  const size = planet.journeySize
+  // Scale planets down on mobile to prevent overflow and maintain proportion
+  const size = isMobile ? Math.min(planet.journeySize, 220) : planet.journeySize
 
   // 3 most interesting stats to show inline
   const featuredStats = planet.stats.slice(0, 3)
@@ -1031,7 +1036,7 @@ function JourneyPlanet({ planet, onSelect }: { planet: PlanetData; index?: numbe
         top: planet.position,
         left: "50%",
         transform: "translateX(-50%)",
-        width: Math.max(size + 160, 360),
+        width: `min(${Math.max(size + 100, 300)}px, calc(100vw - 16px))`,
       }}
     >
       {/* ── Ambient glow burst on entry ── */}
@@ -1541,13 +1546,14 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
               onMouseLeave={() => setHoveredOrbit(null)}
             >
               {/* Counter-rotate so planet stays upright */}
+              {/* Use Math.max(cfg.pxSize, 20) for minimum 20px tap target in canvas space */}
               <button
-                className="absolute group"
+                className="absolute group flex items-center justify-center"
                 style={{
-                  left: cfg.orbitR - cfg.pxSize / 2,
-                  top: -cfg.pxSize / 2,
-                  width: cfg.pxSize,
-                  height: cfg.pxSize,
+                  left: cfg.orbitR - Math.max(cfg.pxSize, 20) / 2,
+                  top: -Math.max(cfg.pxSize, 20) / 2,
+                  width: Math.max(cfg.pxSize, 20),
+                  height: Math.max(cfg.pxSize, 20),
                   animationName: "orbit-ccw",
                   animationDuration: `${cfg.period}s`,
                   animationTimingFunction: "linear",
@@ -1599,9 +1605,11 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
       </div>
 
       {/* Legend */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 px-5 py-2.5 rounded-full bg-black/60 backdrop-blur-xl hud-border">
-        <div className="text-[9px] text-cyan-400/60 tracking-[0.3em]" style={{ fontFamily: "var(--font-orbitron)" }}>
-          CLICK ANY PLANET TO EXPLORE
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 px-4 sm:px-5 py-2.5 rounded-full bg-black/60 backdrop-blur-xl hud-border">
+        <div className="text-[9px] text-cyan-400/60 tracking-[0.2em] sm:tracking-[0.3em]" style={{ fontFamily: "var(--font-orbitron)" }}>
+          <span className="sm:hidden">TAP</span>
+          <span className="hidden sm:inline">CLICK</span>
+          {" "}ANY PLANET TO EXPLORE
         </div>
       </div>
     </div>
@@ -1612,12 +1620,12 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
 
 function ViewToggle({ mode, onChange }: { mode: "journey" | "orrery"; onChange: (m: "journey" | "orrery") => void }) {
   return (
-    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-black/80 backdrop-blur-xl rounded-full px-1.5 py-1.5 hud-border">
+    <div className="fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-black/80 backdrop-blur-xl rounded-full px-1.5 py-1.5 hud-border">
       {(["orrery", "journey"] as const).map((m) => (
         <button
           key={m}
           onClick={() => onChange(m)}
-          className="px-5 py-2 rounded-full text-[10px] tracking-[0.2em] transition-all duration-200"
+          className="px-3 sm:px-5 rounded-full text-[9px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] transition-all duration-200 inline-flex items-center min-h-[40px]"
           style={{
             fontFamily: "var(--font-orbitron)",
             background: mode === m ? "rgba(0,212,255,0.18)" : "transparent",
@@ -1625,7 +1633,8 @@ function ViewToggle({ mode, onChange }: { mode: "journey" | "orrery"; onChange: 
             border: mode === m ? "1px solid rgba(0,212,255,0.4)" : "1px solid transparent",
           }}
         >
-          {m === "journey" ? "EXPLORE VIEW" : "SOLAR SYSTEM"}
+          <span className="sm:hidden">{m === "journey" ? "EXPLORE" : "SYSTEM"}</span>
+          <span className="hidden sm:inline">{m === "journey" ? "EXPLORE VIEW" : "SOLAR SYSTEM"}</span>
         </button>
       ))}
     </div>
@@ -1733,7 +1742,7 @@ function Quiz({ questions, planetColor, accentColor }: { questions: QuizQuestion
         </div>
 
         <button
-          className="px-8 py-3 rounded-full text-sm font-semibold tracking-widest text-white"
+          className="w-full sm:w-auto px-8 py-3 rounded-full text-sm font-semibold tracking-widest text-white min-h-[48px]"
           style={{
             fontFamily: "var(--font-orbitron)",
             background: `linear-gradient(135deg, ${planetColor}cc, ${accentColor}99)`,
@@ -1792,7 +1801,7 @@ function Quiz({ questions, planetColor, accentColor }: { questions: QuizQuestion
               return (
                 <button
                   key={i}
-                  className={`${cls} w-full text-left px-4 py-3 rounded-xl border text-sm transition-all`}
+                  className={`${cls} w-full text-left px-4 py-3 rounded-xl border text-sm transition-all min-h-[48px]`}
                   style={{
                     fontFamily: "'Inter', sans-serif",
                     background: "rgba(255,255,255,0.03)",
@@ -1834,7 +1843,7 @@ function Quiz({ questions, planetColor, accentColor }: { questions: QuizQuestion
 
           {answered && (
             <motion.button
-              className="w-full py-3 rounded-xl text-sm font-semibold tracking-widest text-white"
+              className="w-full py-3 rounded-xl text-sm font-semibold tracking-widest text-white min-h-[48px]"
               style={{
                 fontFamily: "var(--font-orbitron)",
                 background: `linear-gradient(135deg, ${planetColor}cc, ${accentColor}88)`,
@@ -1890,10 +1899,10 @@ function PlanetDetailView({ planet, onClose }: { planet: PlanetData; onClose: ()
         />
       ))}
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 py-10">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* Back button */}
         <motion.button
-          className="flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-10 transition-colors group"
+          className="flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-6 sm:mb-10 transition-colors group min-h-[44px]"
           style={{ fontFamily: "var(--font-orbitron)", letterSpacing: "0.15em" }}
           onClick={onClose}
           whileHover={{ x: -3 }}
@@ -1905,7 +1914,7 @@ function PlanetDetailView({ planet, onClose }: { planet: PlanetData; onClose: ()
         </motion.button>
 
         {/* Header row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 mb-8 lg:mb-12">
           {/* Planet visual */}
           <motion.div
             className="flex items-center justify-center"
@@ -1965,11 +1974,11 @@ function PlanetDetailView({ planet, onClose }: { planet: PlanetData; onClose: ()
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-8 p-1 rounded-xl w-fit" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="flex gap-1 mb-6 sm:mb-8 p-1 rounded-xl w-full sm:w-fit" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
           {(["info", "quiz"] as const).map((t) => (
             <button
               key={t}
-              className="px-6 py-2.5 rounded-lg text-xs font-semibold tracking-widest transition-all"
+              className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-xs font-semibold tracking-widest transition-all min-h-[44px]"
               style={{
                 fontFamily: "var(--font-orbitron)",
                 background: tab === t ? `linear-gradient(135deg, ${planet.color}cc, ${planet.glowColor}99)` : "transparent",
@@ -2054,7 +2063,7 @@ function PlanetDetailView({ planet, onClose }: { planet: PlanetData; onClose: ()
               className="max-w-2xl"
             >
               <div
-                className="p-6 rounded-2xl"
+                className="p-4 sm:p-6 rounded-2xl"
                 style={{
                   background: "rgba(0,0,0,0.4)",
                   border: `1px solid ${planet.color}25`,
@@ -2079,7 +2088,11 @@ type ExploreMode = "journey" | "orrery"
 
 export default function SpaceExploration() {
   const [view, setView] = useState<View>("intro")
-  const [exploreMode, setExploreMode] = useState<ExploreMode>("orrery")
+  // Default to journey (scroll) view on mobile — orrery planet tap targets are too small at mobile scale
+  const [exploreMode, setExploreMode] = useState<ExploreMode>(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) return "journey"
+    return "orrery"
+  })
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetData | null>(null)
 
   const handleEnter = useCallback(() => setView("journey"), [])

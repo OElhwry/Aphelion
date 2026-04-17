@@ -33,12 +33,19 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
   body {
     @apply bg-background text-foreground;
     background-color: #000510;
     color: #e8f4f8;
     overflow-x: hidden;
+    /* Prevent elastic bounce on iOS that can reveal background */
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Improve tap responsiveness on mobile */
+  button, a, [role="button"] {
+    touch-action: manipulation;
   }
 }
 
