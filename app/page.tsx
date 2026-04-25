@@ -3,6 +3,24 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import { motion, useScroll, useTransform, AnimatePresence, useInView } from "framer-motion"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { TourView } from "@/components/tour-view"
+import { Planet3D } from "@/components/planet-3d"
+import { Ruler, Clock, Compass, ArrowDown, Thermometer, Moon as MoonIcon, Weight, Calendar, Star as StarIcon, type LucideIcon } from "lucide-react"
+
+const SERIF_DETAIL = "'Playfair Display', 'Cormorant Garamond', 'Times New Roman', serif"
+
+function getDetailStatIcon(label: string): LucideIcon {
+  const l = label.toLowerCase()
+  if (l.includes("diameter") || l.includes("size")) return Ruler
+  if (l.includes("period") || l.includes("orbit") || l.includes("year") || l.includes("day")) return Clock
+  if (l.includes("age")) return Calendar
+  if (l.includes("distance")) return Compass
+  if (l.includes("gravity")) return ArrowDown
+  if (l.includes("temp")) return Thermometer
+  if (l.includes("moon")) return MoonIcon
+  if (l.includes("mass") || l.includes("weight")) return Weight
+  return StarIcon
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -210,7 +228,7 @@ const PLANETS: PlanetData[] = [
     journeySize: 230,
     detailSize: 210,
     distanceFromSun: 150,
-    tagline: "Our pale blue dot — the only known home",
+    tagline: "Our pale blue dot, the only known home for life",
     stats: [
       { label: "Diameter", value: "12,742 km" },
       { label: "Mass", value: "5.97 × 10²⁴ kg" },
@@ -266,7 +284,7 @@ const PLANETS: PlanetData[] = [
     journeySize: 195,
     detailSize: 190,
     distanceFromSun: 228,
-    tagline: "The red frontier — humanity's next destination",
+    tagline: "The red frontier, humanity's next destination",
     stats: [
       { label: "Diameter", value: "6,779 km" },
       { label: "Mass", value: "6.39 × 10²³ kg" },
@@ -277,8 +295,8 @@ const PLANETS: PlanetData[] = [
     ],
     facts: [
       "Olympus Mons on Mars is the tallest volcano in the solar system at 21.9 km high.",
-      "Mars has the longest canyon in the solar system — Valles Marineris stretches 4,000 km.",
-      "A day on Mars (sol) is 24 hours and 37 minutes — very similar to Earth's.",
+      "Valles Marineris on Mars is the longest canyon in the solar system, stretching 4,000 km.",
+      "A day on Mars (called a sol) lasts 24 hours and 37 minutes, very close to an Earth day.",
     ],
     quiz: [
       {
@@ -322,7 +340,7 @@ const PLANETS: PlanetData[] = [
     journeySize: 430,
     detailSize: 270,
     distanceFromSun: 778,
-    tagline: "King of planets — a world of storms",
+    tagline: "King of planets, a churning world of storms",
     stats: [
       { label: "Diameter", value: "139,820 km" },
       { label: "Mass", value: "1.898 × 10²⁷ kg" },
@@ -389,7 +407,7 @@ const PLANETS: PlanetData[] = [
     ],
     facts: [
       "Saturn's rings are made of billions of ice and rock particles, some as small as dust.",
-      "Saturn is the least dense planet — it would float on water.",
+      "Saturn is the least dense planet in the solar system, so light it would float on water.",
       "Saturn's moon Titan has a thick atmosphere and liquid methane lakes.",
     ],
     quiz: [
@@ -444,8 +462,8 @@ const PLANETS: PlanetData[] = [
       { label: "Gravity", value: "8.87 m/s²" },
     ],
     facts: [
-      "Uranus rotates on its side — its axial tilt is 98 degrees.",
-      "Uranus is the coldest planetary atmosphere in the solar system at -224 °C.",
+      "Uranus rotates on its side, with an axial tilt of 98 degrees.",
+      "Uranus has the coldest atmosphere in the solar system, dipping to around 224 °C below zero.",
       "A single season on Uranus lasts over 20 Earth years.",
     ],
     quiz: [
@@ -500,7 +518,7 @@ const PLANETS: PlanetData[] = [
       { label: "Gravity", value: "11.15 m/s²" },
     ],
     facts: [
-      "Neptune has the strongest winds in the solar system — reaching 2,100 km/h.",
+      "Neptune has the strongest winds in the solar system, reaching speeds of 2,100 km/h.",
       "Neptune was the first planet located through mathematical prediction rather than observation.",
       "Neptune's moon Triton orbits backwards and will eventually be torn apart into a ring.",
     ],
@@ -546,7 +564,7 @@ const PLANETS: PlanetData[] = [
     journeySize: 130,
     detailSize: 160,
     distanceFromSun: 5906,
-    tagline: "The distant dwarf — small but mighty",
+    tagline: "The distant dwarf, small but mighty",
     stats: [
       { label: "Diameter", value: "2,376 km" },
       { label: "Mass", value: "1.303 × 10²² kg" },
@@ -558,7 +576,7 @@ const PLANETS: PlanetData[] = [
     facts: [
       "Pluto was reclassified as a dwarf planet in 2006 by the International Astronomical Union.",
       "Pluto's largest moon Charon is so big relative to Pluto that they orbit each other.",
-      "NASA's New Horizons spacecraft gave us our first close-up images of Pluto in 2015.",
+      "NASA's New Horizons spacecraft delivered the first detailed images of Pluto in 2015.",
     ],
     quiz: [
       {
@@ -1463,23 +1481,28 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
 
   return (
     <div className="fixed inset-0 flex items-center justify-center overflow-hidden"
-      style={{ background: "#000510", paddingTop: 72 }}>
+      style={{ background: "#05070d", paddingTop: 72 }}>
+
+      {/* Wordmark — matches TourView aesthetic */}
+      <div className="absolute left-6 top-5 z-30 text-sm font-medium tracking-wide sm:left-10 sm:top-6">
+        aphelion<span className="text-cyan-300">·</span>
+      </div>
 
       {/* Background stars */}
-      {Array.from({ length: 220 }).map((_, i) => (
+      {Array.from({ length: 260 }).map((_, i) => (
         <div key={i} className="absolute rounded-full bg-white pointer-events-none"
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            width: Math.random() * 2 + 0.4,
-            height: Math.random() * 2 + 0.4,
-            opacity: Math.random() * 0.55 + 0.08,
+            width: Math.random() * 1.8 + 0.3,
+            height: Math.random() * 1.8 + 0.3,
+            opacity: Math.random() * 0.5 + 0.08,
           }} />
       ))}
 
-      {/* Milky Way band — subtle colour wash */}
+      {/* Faint nebular wash for depth */}
       <div className="absolute inset-0 pointer-events-none"
-        style={{ background: "linear-gradient(115deg, transparent 20%, rgba(59,130,246,0.025) 45%, rgba(124,58,237,0.02) 55%, transparent 80%)" }} />
+        style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.025) 0%, transparent 55%)" }} />
 
       {/* Orrery — fixed 900×900 canvas, scaled to fit viewport */}
       <div
@@ -1505,8 +1528,8 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
               cx="450" cy="450"
               r={cfg.orbitR}
               fill="none"
-              stroke={hoveredOrbit === cfg.name ? "rgba(0,212,255,0.35)" : "rgba(255,255,255,0.08)"}
-              strokeWidth={hoveredOrbit === cfg.name ? 1.5 : 1}
+              stroke={hoveredOrbit === cfg.name ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.07)"}
+              strokeWidth={hoveredOrbit === cfg.name ? 1 : 0.6}
               style={{ transition: "stroke 0.3s, stroke-width 0.3s" }}
             />
           ))}
@@ -1576,7 +1599,6 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
 
         {/* Planet labels — fixed position on the orbital ring at start angle */}
         {ORRERY_CONFIG.map((cfg) => {
-          const planet = PLANETS.find((p) => p.name === cfg.name)!
           const angleRad = ((cfg.startAngle - 90) * Math.PI) / 180
           // Place label slightly outside the orbit
           const labelR = cfg.orbitR + 14
@@ -1590,10 +1612,9 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
                 left: lx,
                 top: ly,
                 transform: "translate(-50%, -50%)",
-                fontSize: 9,
-                fontFamily: "var(--font-orbitron)",
-                color: hoveredOrbit === cfg.name ? planet.accentColor : "rgba(255,255,255,0.3)",
-                letterSpacing: "0.15em",
+                fontSize: 10,
+                color: hoveredOrbit === cfg.name ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.4)",
+                letterSpacing: "0.22em",
                 whiteSpace: "nowrap",
                 transition: "color 0.3s",
               }}
@@ -1604,13 +1625,12 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
         })}
       </div>
 
-      {/* Legend */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 px-4 sm:px-5 py-2.5 rounded-full bg-black/60 backdrop-blur-xl hud-border">
-        <div className="text-[9px] text-cyan-400/60 tracking-[0.2em] sm:tracking-[0.3em]" style={{ fontFamily: "var(--font-orbitron)" }}>
-          <span className="sm:hidden">TAP</span>
-          <span className="hidden sm:inline">CLICK</span>
-          {" "}ANY PLANET TO EXPLORE
-        </div>
+      {/* Legend — minimal */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2.5 text-[10px] tracking-[0.3em] text-white/40">
+        <span className="h-px w-6 bg-white/15" aria-hidden />
+        <span className="sm:hidden">TAP A PLANET</span>
+        <span className="hidden sm:inline">CLICK ANY PLANET TO EXPLORE</span>
+        <span className="h-px w-6 bg-white/15" aria-hidden />
       </div>
     </div>
   )
@@ -1620,30 +1640,51 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
 
 function ViewToggle({ mode, onChange }: { mode: "journey" | "orrery"; onChange: (m: "journey" | "orrery") => void }) {
   return (
-    <div className="fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-black/80 backdrop-blur-xl rounded-full px-1.5 py-1.5 hud-border">
-      {(["orrery", "journey"] as const).map((m) => (
-        <button
-          key={m}
-          onClick={() => onChange(m)}
-          className="px-3 sm:px-5 rounded-full text-[9px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] transition-all duration-200 inline-flex items-center min-h-[40px]"
-          style={{
-            fontFamily: "var(--font-orbitron)",
-            background: mode === m ? "rgba(0,212,255,0.18)" : "transparent",
-            color: mode === m ? "#00d4ff" : "rgba(255,255,255,0.35)",
-            border: mode === m ? "1px solid rgba(0,212,255,0.4)" : "1px solid transparent",
-          }}
-        >
-          <span className="sm:hidden">{m === "journey" ? "EXPLORE" : "SYSTEM"}</span>
-          <span className="hidden sm:inline">{m === "journey" ? "EXPLORE VIEW" : "SOLAR SYSTEM"}</span>
-        </button>
-      ))}
+    <div
+      className="fixed top-4 right-4 sm:top-5 sm:right-8 z-50 flex items-center gap-4 rounded-full border border-white/10 bg-black/40 px-4 py-2 backdrop-blur-md sm:gap-5 sm:px-5"
+      style={{ boxShadow: "0 6px 24px rgba(0,0,0,0.35)" }}
+    >
+      {(["orrery", "journey"] as const).map((m, i) => {
+        const active = mode === m
+        const label =
+          m === "journey"
+            ? { short: "EXPLORE", long: "EXPLORE" }
+            : { short: "SYSTEM", long: "SOLAR SYSTEM" }
+        return (
+          <div key={m} className="flex items-center gap-4 sm:gap-5">
+            {i > 0 && <span className="h-3 w-px bg-white/20" aria-hidden />}
+            <button
+              onClick={() => onChange(m)}
+              className="group relative flex flex-col items-center gap-1 px-0.5 transition"
+              style={{
+                color: active ? "#ffffff" : "rgba(255,255,255,0.65)",
+                textShadow: active ? "0 0 12px rgba(255,255,255,0.25)" : "none",
+              }}
+            >
+              <span className="whitespace-nowrap text-[10px] tracking-[0.28em] sm:text-[11px] sm:tracking-[0.32em]">
+                <span className="sm:hidden">{label.short}</span>
+                <span className="hidden sm:inline">{label.long}</span>
+              </span>
+              <span
+                className="h-1 w-1 rounded-full transition-opacity"
+                style={{
+                  background: "rgba(255,255,255,0.95)",
+                  boxShadow: "0 0 6px rgba(255,255,255,0.7)",
+                  opacity: active ? 1 : 0,
+                }}
+                aria-hidden
+              />
+            </button>
+          </div>
+        )
+      })}
     </div>
   )
 }
 
 // ─── Quiz Component ───────────────────────────────────────────────────────────
 
-function Quiz({ questions, planetColor, accentColor }: { questions: QuizQuestion[]; planetColor: string; accentColor: string }) {
+function Quiz({ questions }: { questions: QuizQuestion[] }) {
   const [current, setCurrent] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [answered, setAnswered] = useState(false)
@@ -1684,73 +1725,72 @@ function Quiz({ questions, planetColor, accentColor }: { questions: QuizQuestion
 
   if (done) {
     const pct = Math.round((score / questions.length) * 100)
-    const rank = pct === 100 ? "MISSION EXPERT" : pct >= 80 ? "STELLAR NAVIGATOR" : pct >= 60 ? "SPACE CADET" : "EARTHBOUND TRAINEE"
+    const rank =
+      pct === 100 ? "MISSION EXPERT" :
+      pct >= 80 ? "STELLAR NAVIGATOR" :
+      pct >= 60 ? "SPACE CADET" : "EARTHBOUND TRAINEE"
+    const tone = pct >= 80 ? "rgb(134,239,172)" : pct >= 60 ? "rgba(255,255,255,0.85)" : "rgb(252,165,165)"
     return (
       <motion.div
-        className="text-center py-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="text-[10px] tracking-[0.35em] mb-3" style={{ fontFamily: "var(--font-orbitron)", color: accentColor }}>
+        <div className="mb-2 text-[10px] tracking-[0.35em] text-white/40">
           MISSION DEBRIEF
         </div>
-        <div
-          className="text-6xl font-black mb-2"
-          style={{
-            fontFamily: "var(--font-orbitron)",
-            color: pct >= 80 ? "#4ade80" : pct >= 60 ? accentColor : "#f87171",
-            textShadow: `0 0 30px ${pct >= 80 ? "#4ade80" : pct >= 60 ? planetColor : "#f87171"}80`,
-          }}
-        >
-          {score}/{questions.length}
+        <div className="mb-1 flex items-baseline gap-3">
+          <span
+            className="text-5xl tracking-[0.08em]"
+            style={{ fontFamily: SERIF_DETAIL, color: tone }}
+          >
+            {score}
+          </span>
+          <span className="text-2xl text-white/30" style={{ fontFamily: SERIF_DETAIL }}>
+            / {questions.length}
+          </span>
+          <span className="ml-auto text-[11px] tracking-[0.25em] text-white/45">
+            {pct}% ACCURACY
+          </span>
         </div>
-        <div className="text-slate-400 text-sm mb-6" style={{ fontFamily: "'Inter', sans-serif" }}>
-          {pct}% accuracy
-        </div>
-        <div
-          className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest mb-8"
-          style={{
-            fontFamily: "var(--font-orbitron)",
-            background: `${planetColor}20`,
-            border: `1px solid ${planetColor}50`,
-            color: accentColor,
-          }}
-        >
+        <div className="mb-8 text-[11px] tracking-[0.32em] text-white/65">
           {rank}
         </div>
 
-        {/* Answer review */}
-        <div className="space-y-2 mb-8 text-left">
-          {questions.map((qz, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-3 px-4 py-3 rounded-xl"
-              style={{
-                background: answers[i] === qz.correct ? "rgba(74,222,128,0.08)" : "rgba(248,113,113,0.08)",
-                border: `1px solid ${answers[i] === qz.correct ? "rgba(74,222,128,0.25)" : "rgba(248,113,113,0.25)"}`,
-              }}
-            >
-              <div className="mt-0.5 shrink-0 text-base">{answers[i] === qz.correct ? "✓" : "✗"}</div>
-              <div>
-                <div className="text-slate-300 text-xs mb-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>{qz.question}</div>
-                <div className="text-[11px]" style={{ fontFamily: "'Inter', sans-serif", color: answers[i] === qz.correct ? "#4ade80" : "#f87171" }}>
-                  {qz.options[qz.correct]}
+        {/* Review list */}
+        <div className="mb-8 space-y-2">
+          {questions.map((qz, i) => {
+            const correct = answers[i] === qz.correct
+            return (
+              <div
+                key={i}
+                className="flex items-start gap-4 border-b border-white/5 px-1 py-3"
+              >
+                <span
+                  className="mt-[2px] shrink-0 text-[10px] tracking-[0.2em]"
+                  style={{ color: correct ? "rgb(134,239,172)" : "rgb(252,165,165)" }}
+                >
+                  {correct ? "OK" : "X"}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 text-[12px] leading-snug text-white/75">
+                    {qz.question}
+                  </div>
+                  <div className="text-[11px] text-white/45">
+                    Answer: {qz.options[qz.correct]}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         <button
-          className="w-full sm:w-auto px-8 py-3 rounded-full text-sm font-semibold tracking-widest text-white min-h-[48px]"
-          style={{
-            fontFamily: "var(--font-orbitron)",
-            background: `linear-gradient(135deg, ${planetColor}cc, ${accentColor}99)`,
-            border: `1px solid ${accentColor}40`,
-          }}
+          className="group flex items-center gap-3 text-[11px] tracking-[0.32em] text-white/85 transition hover:text-white"
           onClick={handleRestart}
         >
+          <span className="h-px w-10 bg-white/30 transition-all group-hover:w-14 group-hover:bg-white/60" />
           RETRY QUIZ
+          <span aria-hidden>↺</span>
         </button>
       </motion.div>
     )
@@ -1758,62 +1798,99 @@ function Quiz({ questions, planetColor, accentColor }: { questions: QuizQuestion
 
   return (
     <div>
-      {/* Progress dots */}
-      <div className="flex items-center gap-2 mb-6">
-        {questions.map((_, i) => (
-          <div
-            key={i}
-            className="h-1.5 flex-1 rounded-full transition-all duration-300"
-            style={{
-              background: i < current
-                ? (answers[i] === questions[i].correct ? "#4ade80" : "#f87171")
-                : i === current
-                  ? accentColor
-                  : "rgba(255,255,255,0.1)",
-            }}
-          />
-        ))}
+      {/* Progress — minimal hairline segments */}
+      <div className="mb-6 flex items-center gap-1">
+        {questions.map((_, i) => {
+          const passed = i < current
+          const isCurrent = i === current
+          let bg = "rgba(255,255,255,0.08)"
+          if (passed) bg = answers[i] === questions[i].correct ? "rgba(134,239,172,0.7)" : "rgba(252,165,165,0.7)"
+          else if (isCurrent) bg = "rgba(255,255,255,0.85)"
+          return (
+            <div key={i} className="h-px flex-1 transition-all" style={{ background: bg }} />
+          )
+        })}
       </div>
 
-      <div className="text-[10px] tracking-[0.3em] mb-3" style={{ fontFamily: "var(--font-orbitron)", color: `${accentColor}80` }}>
-        QUESTION {current + 1} OF {questions.length}
+      <div className="mb-4 flex items-center justify-between text-[10px] tracking-[0.32em] text-white/40">
+        <span>QUESTION {String(current + 1).padStart(2, "0")} / {String(questions.length).padStart(2, "0")}</span>
+        <span>SCORE {score}</span>
       </div>
 
       <AnimatePresence mode="wait">
         <motion.div
           key={current}
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
+          exit={{ opacity: 0, x: -16 }}
           transition={{ duration: 0.25 }}
         >
-          <h3 className="text-white text-base font-semibold mb-5 leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
+          <h3
+            className="mb-6 leading-snug text-white/95"
+            style={{ fontFamily: SERIF_DETAIL, fontSize: "clamp(1.15rem, 2vw, 1.5rem)" }}
+          >
             {q.question}
           </h3>
 
-          <div className="space-y-2.5 mb-5">
+          <div className="mb-6 space-y-2">
             {q.options.map((opt, i) => {
-              let cls = "quiz-option"
-              if (answered) cls += " answered"
-              if (answered && i === q.correct) cls += " correct"
-              else if (answered && i === selected && i !== q.correct) cls += " incorrect"
+              const isCorrect = answered && i === q.correct
+              const isWrongPick = answered && i === selected && i !== q.correct
+              const isMutedPick = answered && !isCorrect && !isWrongPick
+
+              const borderColor = isCorrect
+                ? "rgba(134,239,172,0.55)"
+                : isWrongPick
+                  ? "rgba(252,165,165,0.55)"
+                  : "rgba(255,255,255,0.1)"
+              const bg = isCorrect
+                ? "rgba(134,239,172,0.06)"
+                : isWrongPick
+                  ? "rgba(252,165,165,0.06)"
+                  : "rgba(0,0,0,0.3)"
+              const textColor = isMutedPick ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.85)"
 
               return (
                 <button
                   key={i}
-                  className={`${cls} w-full text-left px-4 py-3 rounded-xl border text-sm transition-all min-h-[48px]`}
+                  disabled={answered}
+                  className="group flex w-full items-center gap-4 rounded-md px-4 py-3 text-left text-[13px] backdrop-blur-sm transition disabled:cursor-default"
                   style={{
-                    fontFamily: "'Inter', sans-serif",
-                    background: "rgba(255,255,255,0.03)",
-                    borderColor: "rgba(255,255,255,0.1)",
-                    color: "#e2e8f0",
+                    background: bg,
+                    border: `1px solid ${borderColor}`,
+                    color: textColor,
                   }}
                   onClick={() => handleSelect(i)}
+                  onMouseOver={(e) => {
+                    if (!answered) {
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)"
+                      e.currentTarget.style.background = "rgba(255,255,255,0.04)"
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!answered) {
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"
+                      e.currentTarget.style.background = "rgba(0,0,0,0.3)"
+                    }
+                  }}
                 >
-                  <span className="text-xs mr-3 opacity-50" style={{ fontFamily: "var(--font-orbitron)" }}>
+                  <span
+                    className="text-[10px] tracking-[0.2em] text-white/35"
+                    style={{ fontFamily: SERIF_DETAIL }}
+                  >
                     {String.fromCharCode(65 + i)}
                   </span>
-                  {opt}
+                  <span className="flex-1">{opt}</span>
+                  {isCorrect && (
+                    <span className="text-[10px] tracking-[0.2em]" style={{ color: "rgb(134,239,172)" }}>
+                      CORRECT
+                    </span>
+                  )}
+                  {isWrongPick && (
+                    <span className="text-[10px] tracking-[0.2em]" style={{ color: "rgb(252,165,165)" }}>
+                      INCORRECT
+                    </span>
+                  )}
                 </button>
               )
             })}
@@ -1823,19 +1900,19 @@ function Quiz({ questions, planetColor, accentColor }: { questions: QuizQuestion
           <AnimatePresence>
             {answered && (
               <motion.div
-                className="mb-5 px-4 py-3 rounded-xl text-sm"
+                className="mb-6 border-l-2 pl-4 text-[12px] leading-relaxed text-white/65"
                 style={{
-                  fontFamily: "'Inter', sans-serif",
-                  background: selected === q.correct ? "rgba(74,222,128,0.08)" : "rgba(248,113,113,0.08)",
-                  border: `1px solid ${selected === q.correct ? "rgba(74,222,128,0.25)" : "rgba(248,113,113,0.25)"}`,
-                  color: "#94a3b8",
+                  borderLeftColor: selected === q.correct ? "rgba(134,239,172,0.5)" : "rgba(252,165,165,0.5)",
                 }}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <span style={{ color: selected === q.correct ? "#4ade80" : "#f87171", fontWeight: 600 }}>
-                  {selected === q.correct ? "Correct! " : "Incorrect. "}
-                </span>
+                <div
+                  className="mb-1 text-[10px] tracking-[0.32em]"
+                  style={{ color: selected === q.correct ? "rgb(134,239,172)" : "rgb(252,165,165)" }}
+                >
+                  {selected === q.correct ? "CORRECT" : "INCORRECT"}
+                </div>
                 {q.explanation}
               </motion.div>
             )}
@@ -1843,17 +1920,14 @@ function Quiz({ questions, planetColor, accentColor }: { questions: QuizQuestion
 
           {answered && (
             <motion.button
-              className="w-full py-3 rounded-xl text-sm font-semibold tracking-widest text-white min-h-[48px]"
-              style={{
-                fontFamily: "var(--font-orbitron)",
-                background: `linear-gradient(135deg, ${planetColor}cc, ${accentColor}88)`,
-                border: `1px solid ${accentColor}40`,
-              }}
+              className="group flex items-center gap-3 text-[11px] tracking-[0.32em] text-white/85 transition hover:text-white"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               onClick={handleNext}
             >
-              {current < questions.length - 1 ? "NEXT QUESTION →" : "SEE RESULTS"}
+              <span className="h-px w-10 bg-white/30 transition-all group-hover:w-14 group-hover:bg-white/60" />
+              {current < questions.length - 1 ? "NEXT QUESTION" : "SEE RESULTS"}
+              <span aria-hidden>→</span>
             </motion.button>
           )}
         </motion.div>
@@ -1864,132 +1938,167 @@ function Quiz({ questions, planetColor, accentColor }: { questions: QuizQuestion
 
 // ─── Planet Detail View ────────────────────────────────────────────────────────
 
-function PlanetDetailView({ planet, onClose }: { planet: PlanetData; onClose: () => void }) {
+function PlanetDetailView({
+  planet,
+  onClose,
+  mode,
+  onModeChange,
+}: {
+  planet: PlanetData
+  onClose: () => void
+  mode: "journey" | "orrery"
+  onModeChange: (m: "journey" | "orrery") => void
+}) {
   const [tab, setTab] = useState<"info" | "quiz">("info")
+
+  const subtitle =
+    planet.distanceFromSun === 0
+      ? "STAR · CENTER OF THE SOLAR SYSTEM"
+      : `PLANET · ${planet.distanceFromSun.toLocaleString()} MILLION KM FROM SUN`
 
   return (
     <motion.div
       className="fixed inset-0 z-50 overflow-y-auto"
-      style={{ background: "#000510" }}
+      style={{ background: "#05070d", color: "white" }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {/* Background glow */}
+      {/* Wordmark — matches explore view */}
+      <div className="fixed left-6 top-5 z-30 text-sm font-medium tracking-wide sm:left-10 sm:top-6">
+        aphelion<span className="text-cyan-300">·</span>
+      </div>
+
+      {/* View toggle — same as explore */}
+      <ViewToggle mode={mode} onChange={onModeChange} />
+
+      {/* Subtle radial planet wash, far softer than before */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
-          background: `radial-gradient(ellipse at 70% 30%, ${planet.color}18 0%, transparent 60%)`,
+          background: `radial-gradient(ellipse at 30% 40%, ${planet.color}10 0%, transparent 55%)`,
         }}
       />
 
-      {/* Star bg */}
-      {Array.from({ length: 120 }).map((_, i) => (
+      {/* Background stars — minimal, layered */}
+      {Array.from({ length: 160 }).map((_, i) => (
         <div
           key={i}
           className="fixed rounded-full bg-white pointer-events-none"
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            width: Math.random() * 2 + 0.5,
-            height: Math.random() * 2 + 0.5,
-            opacity: Math.random() * 0.5 + 0.1,
+            width: Math.random() * 1.6 + 0.3,
+            height: Math.random() * 1.6 + 0.3,
+            opacity: Math.random() * 0.45 + 0.08,
           }}
         />
       ))}
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        {/* Back button */}
+      <div className="relative z-10 mx-auto max-w-6xl px-5 pb-20 pt-20 sm:px-8 sm:pt-24">
+        {/* Back link — minimal */}
         <motion.button
-          className="flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-6 sm:mb-10 transition-colors group min-h-[44px]"
-          style={{ fontFamily: "var(--font-orbitron)", letterSpacing: "0.15em" }}
+          className="mb-10 flex items-center gap-2 text-[11px] tracking-[0.3em] text-white/55 transition-colors hover:text-white sm:mb-12"
           onClick={onClose}
           whileHover={{ x: -3 }}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M13 8H3M7 12l-4-4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          BACK TO JOURNEY
+          BACK
         </motion.button>
 
-        {/* Header row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 mb-8 lg:mb-12">
-          {/* Planet visual */}
+        {/* Hero row */}
+        <div className="mb-14 grid grid-cols-1 items-center gap-8 lg:mb-20 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
+          {/* 3D Planet */}
           <motion.div
-            className="flex items-center justify-center"
-            initial={{ opacity: 0, scale: 0.7 }}
+            className="relative h-[300px] w-full sm:h-[420px] lg:h-[520px]"
+            initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, type: "spring", stiffness: 80 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           >
-            <CSSPlanet name={planet.name} size={planet.detailSize} animate />
+            <Planet3D
+              name={planet.name}
+              showStars={false}
+              enableControls
+              enableZoom={false}
+              autoRotate
+              rotationSpeed={0.06}
+              cameraZ={planet.name === "Saturn" ? 4.2 : 3.4}
+            />
           </motion.div>
 
-          {/* Title + stats */}
+          {/* Title + tagline + stats */}
           <motion.div
-            className="flex flex-col justify-center"
-            initial={{ opacity: 0, x: 40 }}
+            initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
+            transition={{ duration: 0.7, delay: 0.15 }}
           >
-            <div className="text-[10px] tracking-[0.35em] mb-3" style={{ fontFamily: "var(--font-orbitron)", color: `${planet.accentColor}80` }}>
-              {planet.distanceFromSun === 0 ? "STAR" : "PLANET"} · {planet.distanceFromSun === 0 ? "CENTER OF SOLAR SYSTEM" : `${planet.distanceFromSun.toLocaleString()} MILLION KM FROM SUN`}
+            <div className="mb-4 text-[10px] tracking-[0.35em] text-white/40">
+              {subtitle}
             </div>
             <h1
-              className="font-black leading-none mb-3"
+              className="mb-4 leading-none text-white/95"
               style={{
-                fontFamily: "var(--font-orbitron)",
-                fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
-                color: planet.accentColor,
-                textShadow: `0 0 40px ${planet.color}80`,
+                fontFamily: SERIF_DETAIL,
+                fontSize: "clamp(2.5rem, 6vw, 4.2rem)",
+                letterSpacing: "0.32em",
               }}
             >
               {planet.name.toUpperCase()}
             </h1>
-            <p className="text-slate-400 text-base mb-8 leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
+            <p
+              className="mb-8 max-w-md text-sm italic leading-relaxed text-white/55"
+              style={{ fontFamily: SERIF_DETAIL }}
+            >
               {planet.tagline}
             </p>
 
-            {/* Stats grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {planet.stats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="px-4 py-3 rounded-xl"
-                  style={{
-                    background: `${planet.color}0a`,
-                    border: `1px solid ${planet.color}25`,
-                  }}
-                >
-                  <div className="text-[9px] tracking-[0.25em] mb-1" style={{ fontFamily: "var(--font-orbitron)", color: `${planet.accentColor}70` }}>
-                    {stat.label.toUpperCase()}
+            {/* Stats — clean inline list with icons (matches explore left rail) */}
+            <div className="grid grid-cols-1 gap-y-3 sm:grid-cols-2 sm:gap-x-8">
+              {planet.stats.map((stat) => {
+                const Icon = getDetailStatIcon(stat.label)
+                return (
+                  <div key={stat.label} className="flex items-center justify-between gap-3 border-b border-white/5 pb-2">
+                    <div className="flex items-center gap-2.5">
+                      <Icon className="h-3 w-3 shrink-0 text-white/35" strokeWidth={1.5} />
+                      <span className="text-[10px] uppercase tracking-[0.25em] text-white/45">
+                        {stat.label}
+                      </span>
+                    </div>
+                    <span className="text-right text-[11px] text-white/85">
+                      {stat.value}
+                    </span>
                   </div>
-                  <div className="text-white text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    {stat.value}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </motion.div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 sm:mb-8 p-1 rounded-xl w-full sm:w-fit" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          {(["info", "quiz"] as const).map((t) => (
-            <button
-              key={t}
-              className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-xs font-semibold tracking-widest transition-all min-h-[44px]"
-              style={{
-                fontFamily: "var(--font-orbitron)",
-                background: tab === t ? `linear-gradient(135deg, ${planet.color}cc, ${planet.glowColor}99)` : "transparent",
-                color: tab === t ? "#fff" : "rgba(255,255,255,0.4)",
-                border: tab === t ? `1px solid ${planet.accentColor}40` : "1px solid transparent",
-              }}
-              onClick={() => setTab(t)}
-            >
-              {t === "info" ? "FACTS" : "QUIZ"}
-            </button>
-          ))}
+        {/* Tabs — minimal text style */}
+        <div className="mb-8 flex items-center gap-6 border-b border-white/10 pb-2 sm:mb-10">
+          {(["info", "quiz"] as const).map((t) => {
+            const active = tab === t
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className="group relative flex flex-col items-center gap-2 pb-2 transition"
+                style={{ color: active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.4)" }}
+              >
+                <span className="text-[11px] tracking-[0.32em]">
+                  {t === "info" ? "FACTS" : "QUIZ"}
+                </span>
+                <span
+                  className="absolute -bottom-[2px] left-1/2 h-px w-full -translate-x-1/2 transition-opacity"
+                  style={{ background: "rgba(255,255,255,0.85)", opacity: active ? 1 : 0 }}
+                  aria-hidden
+                />
+              </button>
+            )
+          })}
         </div>
 
         {/* Tab content */}
@@ -2001,36 +2110,27 @@ function PlanetDetailView({ planet, onClose }: { planet: PlanetData; onClose: ()
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.3 }}
-              className="max-w-2xl"
+              className="max-w-3xl"
             >
-              <div className="text-[10px] tracking-[0.35em] mb-5" style={{ fontFamily: "var(--font-orbitron)", color: `${planet.accentColor}70` }}>
+              <div className="mb-5 text-[10px] tracking-[0.35em] text-white/40">
                 DID YOU KNOW
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {planet.facts.map((fact, i) => (
                   <motion.div
                     key={i}
-                    className="flex gap-4 px-5 py-4 rounded-xl"
-                    style={{
-                      background: `${planet.color}08`,
-                      border: `1px solid ${planet.color}20`,
-                    }}
+                    className="flex gap-4 rounded-md border border-white/10 bg-black/30 p-4 backdrop-blur-sm"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
+                    transition={{ delay: i * 0.08 }}
                   >
                     <div
-                      className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5"
-                      style={{
-                        fontFamily: "var(--font-orbitron)",
-                        background: `${planet.color}30`,
-                        color: planet.accentColor,
-                        border: `1px solid ${planet.color}40`,
-                      }}
+                      className="mt-[3px] shrink-0 text-[11px] tracking-[0.2em] text-white/45"
+                      style={{ fontFamily: SERIF_DETAIL }}
                     >
-                      {i + 1}
+                      {String(i + 1).padStart(2, "0")}
                     </div>
-                    <p className="text-slate-300 text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    <p className="text-[13px] leading-relaxed text-white/75">
                       {fact}
                     </p>
                   </motion.div>
@@ -2038,17 +2138,13 @@ function PlanetDetailView({ planet, onClose }: { planet: PlanetData; onClose: ()
               </div>
 
               <motion.button
-                className="mt-8 px-8 py-3 rounded-full text-sm font-semibold tracking-widest text-white"
-                style={{
-                  fontFamily: "var(--font-orbitron)",
-                  background: `linear-gradient(135deg, ${planet.color}cc, ${planet.glowColor}99)`,
-                  border: `1px solid ${planet.accentColor}40`,
-                }}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
+                className="group mt-8 flex items-center gap-3 text-[11px] tracking-[0.32em] text-white/85 transition hover:text-white"
+                whileHover={{ x: 3 }}
                 onClick={() => setTab("quiz")}
               >
-                TAKE THE QUIZ →
+                <span className="h-px w-10 bg-white/30 transition-all group-hover:w-14 group-hover:bg-white/60" />
+                TAKE THE QUIZ
+                <span aria-hidden>→</span>
               </motion.button>
             </motion.div>
           )}
@@ -2060,18 +2156,9 @@ function PlanetDetailView({ planet, onClose }: { planet: PlanetData; onClose: ()
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.3 }}
-              className="max-w-2xl"
+              className="max-w-3xl"
             >
-              <div
-                className="p-4 sm:p-6 rounded-2xl"
-                style={{
-                  background: "rgba(0,0,0,0.4)",
-                  border: `1px solid ${planet.color}25`,
-                  backdropFilter: "blur(12px)",
-                }}
-              >
-                <Quiz questions={planet.quiz} planetColor={planet.color} accentColor={planet.accentColor} />
-              </div>
+              <Quiz questions={planet.quiz} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -2088,11 +2175,7 @@ type ExploreMode = "journey" | "orrery"
 
 export default function SpaceExploration() {
   const [view, setView] = useState<View>("intro")
-  // Default to journey (scroll) view on mobile — orrery planet tap targets are too small at mobile scale
-  const [exploreMode, setExploreMode] = useState<ExploreMode>(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 768) return "journey"
-    return "orrery"
-  })
+  const [exploreMode, setExploreMode] = useState<ExploreMode>("journey")
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetData | null>(null)
 
   const handleEnter = useCallback(() => setView("journey"), [])
@@ -2127,8 +2210,7 @@ export default function SpaceExploration() {
             {/* Toggle — always on top */}
             <ViewToggle mode={exploreMode} onChange={handleModeChange} />
 
-            {/* Distance HUD — only meaningful in scroll/journey mode */}
-            {exploreMode === "journey" && <DistanceHUD />}
+            {/* Distance HUD removed — TourView is a single screen, not scroll-based */}
 
             {/* Content */}
             <AnimatePresence mode="wait">
@@ -2136,7 +2218,7 @@ export default function SpaceExploration() {
                 <motion.div key="explore"
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   transition={{ duration: 0.4 }}>
-                  <JourneyView onSelectPlanet={handleSelectPlanet} />
+                  <TourView planets={PLANETS} onSelectPlanet={(p) => handleSelectPlanet(p as PlanetData)} />
                 </motion.div>
               ) : (
                 <motion.div key="orrery"
@@ -2150,7 +2232,17 @@ export default function SpaceExploration() {
         )}
 
         {view === "planet" && selectedPlanet && (
-          <PlanetDetailView key="planet" planet={selectedPlanet} onClose={handleClosePlanet} />
+          <PlanetDetailView
+            key="planet"
+            planet={selectedPlanet}
+            onClose={handleClosePlanet}
+            mode={exploreMode}
+            onModeChange={(m) => {
+              setExploreMode(m)
+              setView("journey")
+              setSelectedPlanet(null)
+            }}
+          />
         )}
       </AnimatePresence>
     </>

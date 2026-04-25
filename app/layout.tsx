@@ -25,21 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${orbitron.variable} font-orbitron overflow-x-hidden`}>
-        
-        {/* Header */}
-        <header className="fixed top-0 left-0 w-full flex items-center justify-between px-6 py-4 z-50">
-          <div className="flex items-center gap-3">
-            <span className="text-white font-semibold text-lg">
-              Aphelion
-            </span>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="pt-20">
-          {children}
-        </main>
-
+        {children}
       </body>
     </html>
   )
