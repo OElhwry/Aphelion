@@ -12,8 +12,8 @@ const orbitron = Orbitron({
 export const metadata: Metadata = {
   title: "Aphelion - Solar System Explorer",
   description: "A cinematic journey through our solar system — 10 worlds, 50 questions, 5.9 billion kilometres.",
-    icons: {
-    icon: "/astronauts/aphelion.jpg",
+  icons: {
+    icon: "/aphelion-icon.svg",
   },
 }
 

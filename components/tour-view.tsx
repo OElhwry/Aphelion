@@ -3,10 +3,11 @@
 import { Suspense, useState, useEffect, useRef, useMemo } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { CameraControls, Stars } from "@react-three/drei"
-import { motion, AnimatePresence } from "framer-motion"
-import { Ruler, Clock, Compass, ArrowDown, Thermometer, Moon, Weight, Calendar, Star } from "lucide-react"
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
+import { Ruler, Clock, Compass, ArrowDown, Thermometer, Moon, Weight, Calendar, Star, MousePointer2, RotateCcw, Sparkles } from "lucide-react"
 import * as THREE from "three"
 import { PlanetMesh, type PlanetKey } from "@/components/planet-3d"
+import { AphelionLogo } from "@/components/aphelion-logo"
 import { cn } from "@/lib/utils"
 
 interface TourPlanet {
@@ -17,6 +18,8 @@ interface TourPlanet {
   color?: string
   accentColor?: string
 }
+
+type CompletionMap = Record<string, { factsRead?: boolean; quizCompleted?: boolean }>
 
 const SERIF = "'Playfair Display', 'Cormorant Garamond', 'Times New Roman', serif"
 
@@ -52,6 +55,13 @@ const REAL_SCALE: Record<string, number> = {
 const camDistance = (scale: number) => scale * 3.4 + 1.0
 const positionFor = (name: string): [number, number, number] => PLANET_POSITIONS[name] ?? [0, 0, 0]
 const scaleFor = (name: string) => REAL_SCALE[name] ?? 1
+
+function triggerHaptic(pattern: number | number[] = 10) {
+  if (typeof window === "undefined") return
+  const isTouch = window.matchMedia("(pointer: coarse)").matches
+  if (!isTouch || !("vibrate" in navigator)) return
+  navigator.vibrate(pattern)
+}
 
 function getStatIcon(label: string) {
   const l = label.toLowerCase()
@@ -181,36 +191,32 @@ function ClickablePlanet({
   position,
   scale,
   onClick,
-  isCurrent,
 }: {
   name: string
   position: [number, number, number]
   scale: number
   onClick: () => void
-  isCurrent: boolean
 }) {
   const planetKey = name.toLowerCase() as PlanetKey
   return (
     <group position={position} scale={scale}>
       <PlanetMesh planetKey={planetKey} autoRotate rotationSpeed={0.05} />
-      {!isCurrent && (
-        <mesh
-          onClick={(e) => {
-            e.stopPropagation()
-            onClick()
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation()
-            document.body.style.cursor = "pointer"
-          }}
-          onPointerOut={() => {
-            document.body.style.cursor = "default"
-          }}
-        >
-          <sphereGeometry args={[1.15, 16, 16]} />
-          <meshBasicMaterial transparent opacity={0} />
-        </mesh>
-      )}
+      <mesh
+        onClick={(e) => {
+          e.stopPropagation()
+          onClick()
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation()
+          document.body.style.cursor = "pointer"
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = "default"
+        }}
+      >
+        <sphereGeometry args={[1.15, 16, 16]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
     </group>
   )
 }
@@ -218,17 +224,36 @@ function ClickablePlanet({
 export function TourView({
   planets,
   onSelectPlanet,
+  completion = {},
 }: {
   planets: TourPlanet[]
   onSelectPlanet: (p: TourPlanet) => void
+  completion?: CompletionMap
 }) {
+  const prefersReducedMotion = useReducedMotion()
   const startIdx = useMemo(() => {
     const i = planets.findIndex((p) => p.name === "Earth")
     return i === -1 ? 0 : i
   }, [planets])
 
   const [index, setIndex] = useState(startIdx)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [onboardingStep, setOnboardingStep] = useState(0)
   const current = planets[index]
+  const onboardingSteps = [
+    {
+      title: "Navigate in 3D",
+      description: "Drag with mouse or swipe to rotate and explore each planet from different angles.",
+    },
+    {
+      title: "Open Planet Details",
+      description: "Click any planet or press Get Started to jump straight into facts and quizzes.",
+    },
+    {
+      title: "Enjoy the Journey",
+      description: "Continue exploring the solar system and discover new details on every world.",
+    },
+  ] as const
 
   // Lock body overflow so the page never scrolls — bottom nav must stay visible
   useEffect(() => {
@@ -238,6 +263,24 @@ export function TourView({
       document.body.style.overflow = prev
     }
   }, [])
+
+  useEffect(() => {
+    const key = "aphelion.tour-onboarding-seen"
+    const seen = window.sessionStorage.getItem(key) === "1"
+    if (seen) return
+    setShowOnboarding(true)
+    setOnboardingStep(0)
+    window.sessionStorage.setItem(key, "1")
+  }, [])
+
+  useEffect(() => {
+    if (!showOnboarding) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowOnboarding(false)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [showOnboarding])
 
   const positions = useMemo(() => planets.map((p) => positionFor(p.name)), [planets])
   const scales = useMemo(() => planets.map((p) => scaleFor(p.name)), [planets])
@@ -258,8 +301,8 @@ export function TourView({
   return (
     <main className="fixed inset-0 z-0 overflow-hidden bg-[#05070d] text-white">
       {/* Wordmark */}
-      <div className="absolute left-6 top-5 z-30 text-sm font-medium tracking-wide sm:left-10 sm:top-6">
-        aphelion<span className="text-cyan-300">·</span>
+      <div className="absolute left-6 top-5 z-30 sm:left-10 sm:top-6">
+        <AphelionLogo wordmarkClassName="text-[12px] tracking-[0.32em]" iconClassName="h-6 w-6" />
       </div>
 
       {/* 3D Canvas */}
@@ -281,8 +324,10 @@ export function TourView({
                 name={p.name}
                 position={positions[i]}
                 scale={scales[i]}
-                onClick={() => setIndex(i)}
-                isCurrent={i === index}
+                onClick={() => {
+                  triggerHaptic([8, 12, 8])
+                  onSelectPlanet(p)
+                }}
               />
             ))}
           </Suspense>
@@ -293,7 +338,7 @@ export function TourView({
 
 
       {/* Stats — left side */}
-      <div className="pointer-events-none absolute left-4 top-1/2 z-20 -translate-y-1/2 sm:left-10">
+      <div className="pointer-events-none absolute left-4 top-1/2 z-20 hidden -translate-y-1/2 md:block sm:left-10">
         <AnimatePresence mode="wait">
           <motion.div
             key={current.name}
@@ -319,7 +364,7 @@ export function TourView({
       </div>
 
       {/* Description — right side */}
-      <div className="pointer-events-none absolute right-4 top-1/2 z-20 max-w-[280px] -translate-y-1/2 sm:right-10 sm:max-w-sm">
+      <div className="pointer-events-none absolute right-4 top-1/2 z-20 hidden max-w-[280px] -translate-y-1/2 md:block sm:right-10 sm:max-w-sm">
         <AnimatePresence mode="wait">
           <motion.div
             key={current.name}
@@ -349,18 +394,143 @@ export function TourView({
       </div>
 
       {/* Get Started CTA */}
-      <div className="absolute bottom-24 right-6 z-30 sm:bottom-28 sm:right-10">
+      <div className="absolute bottom-24 right-4 z-30 sm:bottom-28 sm:right-10">
         <button
-          onClick={() => onSelectPlanet(current)}
-          className="rounded-full bg-white px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-black shadow-lg transition hover:bg-white/90 sm:px-6 sm:py-2.5"
+          onClick={() => {
+            triggerHaptic([8, 12, 8])
+            onSelectPlanet(current)
+          }}
+          className="min-h-11 rounded-full bg-white px-5 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-black shadow-lg transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 sm:px-6 sm:py-2.5 sm:tracking-[0.3em]"
+          aria-label={`Open ${current.name} details`}
         >
           Get Started
         </button>
       </div>
 
+      {/* Mobile condensed details card */}
+      <div className="absolute inset-x-4 bottom-24 z-20 md:hidden">
+        <div className="rounded-xl border border-white/15 bg-black/45 p-3.5 backdrop-blur-md">
+          <div
+            className="mb-1.5 flex items-center gap-2 text-sm tracking-[0.22em] text-white/95"
+            style={{ fontFamily: SERIF }}
+          >
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: "rgba(255,255,255,0.6)" }}
+              aria-hidden
+            />
+            {current.name.toUpperCase()}
+          </div>
+          <p className="max-h-[2.9em] overflow-hidden text-[12px] leading-relaxed text-white/75">
+            {description[0]}
+          </p>
+        </div>
+      </div>
+
+      {/* First-time guided onboarding */}
+      <AnimatePresence>
+        {showOnboarding && (
+          <motion.div
+            className="absolute inset-0 z-40 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-[2px]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: prefersReducedMotion ? 0.15 : 0.25 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Quick guide tutorial"
+          >
+            <motion.div
+              className="w-full max-w-xl rounded-3xl border border-white/10 bg-[linear-gradient(155deg,rgba(9,16,28,0.9)_0%,rgba(5,10,18,0.94)_45%,rgba(4,8,14,0.97)_100%)] p-6 text-white shadow-[0_24px_80px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.03),inset_0_1px_0_rgba(255,255,255,0.07)] sm:p-7"
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: prefersReducedMotion ? 0.15 : 0.3, ease: "easeOut" }}
+            >
+              <div className="mb-2 text-[10px] uppercase tracking-[0.28em] text-cyan-200/80">
+                Quick Guide
+              </div>
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={onboardingStep}
+                  initial={{ opacity: 0, x: 26, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, x: -22, filter: "blur(4px)" }}
+                  transition={{ duration: prefersReducedMotion ? 0.15 : 0.32, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <div className="mb-4 flex items-center gap-3">
+                    <motion.div
+                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-200/25 bg-cyan-400/10 text-cyan-200"
+                      animate={onboardingStep === 0 ? { rotate: [0, -8, 8, 0] } : onboardingStep === 1 ? { scale: [1, 1.08, 1] } : { y: [0, -3, 0] }}
+                      transition={{ duration: 1.25, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      {onboardingStep === 0 && (
+                        <div className="relative flex items-center justify-center">
+                          <MousePointer2 className="h-5 w-5" strokeWidth={1.7} />
+                          <RotateCcw className="absolute -right-3 -top-3 h-3.5 w-3.5 text-cyan-100/85" strokeWidth={1.8} />
+                        </div>
+                      )}
+                      {onboardingStep === 1 && <Sparkles className="h-5 w-5" strokeWidth={1.7} />}
+                      {onboardingStep === 2 && <Compass className="h-5 w-5" strokeWidth={1.7} />}
+                    </motion.div>
+                    <div className="text-base tracking-wide text-white/95 sm:text-lg">
+                      {onboardingSteps[onboardingStep].title}
+                    </div>
+                  </div>
+                  <div className="min-h-[58px] text-sm leading-relaxed text-white/78 sm:text-[15px]">
+                    {onboardingSteps[onboardingStep].description}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+
+              <div className="mt-5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {[0, 1, 2].map((s) => (
+                    <span
+                      key={s}
+                      className={cn(
+                        "h-1.5 rounded-full transition-all",
+                        onboardingStep === s ? "w-6 bg-cyan-300" : "w-2 bg-white/30",
+                      )}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      triggerHaptic(8)
+                      setShowOnboarding(false)
+                    }}
+                    className="min-h-10 rounded-full border border-white/20 px-3.5 py-1.5 text-[11px] uppercase tracking-[0.2em] text-white/80 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80"
+                  >
+                    Skip
+                  </button>
+                  <motion.button
+                    onClick={() => {
+                      triggerHaptic(8)
+                      if (onboardingStep >= 2) {
+                        setShowOnboarding(false)
+                        return
+                      }
+                      setOnboardingStep((v) => Math.min(v + 1, 2))
+                    }}
+                    className="min-h-10 rounded-full bg-white px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80"
+                    whileHover={{ scale: 1.05, y: -1 }}
+                    whileTap={{ scale: 0.96 }}
+                  >
+                    {onboardingStep >= 2 ? "Start" : "Next"}
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Bottom planet navigation — minimal inline list */}
-      <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-6 pt-4">
-        <div className="mx-auto flex max-w-5xl items-end justify-center gap-3 overflow-x-auto sm:gap-5">
+      <div className="absolute inset-x-0 bottom-0 z-20 px-3 pb-4 pt-3 sm:px-4 sm:pb-6 sm:pt-4">
+        <div className="mx-auto flex max-w-5xl items-end justify-start gap-3 overflow-x-auto rounded-lg border border-white/10 bg-black/35 px-3 py-2.5 backdrop-blur-sm sm:justify-center sm:gap-5 sm:border-none sm:bg-transparent sm:px-0 sm:py-0">
           <span className="hidden shrink-0 pb-[2px] text-[10px] tracking-[0.25em] text-white/35 sm:inline">
             Planets
           </span>
@@ -369,11 +539,16 @@ export function TourView({
             return (
               <button
                 key={p.name}
-                onClick={() => setIndex(i)}
+                onClick={() => {
+                  triggerHaptic(8)
+                  setIndex(i)
+                }}
                 className={cn(
-                  "group relative flex shrink-0 flex-col items-center gap-1 px-1 transition",
+                  "group relative flex min-h-10 shrink-0 flex-col items-center justify-center gap-1 px-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80",
                   active ? "text-white" : "text-white/40 hover:text-white/75",
                 )}
+                aria-label={`Focus ${p.name}`}
+                aria-pressed={active}
               >
                 {/* Active orbit indicator */}
                 <span
@@ -390,6 +565,11 @@ export function TourView({
                 </span>
                 <span className="whitespace-nowrap text-[10px] tracking-[0.18em] sm:text-[11px]">
                   {p.name}
+                </span>
+                <span className="mt-0.5 flex items-center gap-1 text-[8px] tracking-[0.12em] text-white/45">
+                  <span style={{ opacity: completion[p.name]?.factsRead ? 1 : 0.35 }}>FACTS</span>
+                  <span aria-hidden>·</span>
+                  <span style={{ opacity: completion[p.name]?.quizCompleted ? 1 : 0.35 }}>QUIZ</span>
                 </span>
               </button>
             )

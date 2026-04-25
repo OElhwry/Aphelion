@@ -1,15 +1,14 @@
 "use client"
 
 import { Planet3D } from "@/components/planet-3d"
+import { AphelionLogo } from "@/components/aphelion-logo"
 
 export default function PlanetTestPage() {
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-[#05070d] text-white">
       {/* Top nav bar (reference style) */}
       <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-8 py-5">
-        <span className="text-sm font-medium tracking-wide">
-          aphelion<span className="text-cyan-300">·</span>
-        </span>
+        <AphelionLogo wordmarkClassName="text-[12px] tracking-[0.32em]" iconClassName="h-6 w-6" />
         <nav className="flex items-center gap-8 text-xs uppercase tracking-[0.18em] text-white/60">
           <span className="border-b-2 border-cyan-300 pb-1 text-white">Planets</span>
           <span>Trailer</span>

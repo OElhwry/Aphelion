@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
-import { motion, useScroll, useTransform, AnimatePresence, useInView } from "framer-motion"
+import { useEffect, useRef, useState, useCallback, type WheelEvent } from "react"
+import { motion, useScroll, useTransform, AnimatePresence, useInView, useReducedMotion } from "framer-motion"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { TourView } from "@/components/tour-view"
 import { Planet3D } from "@/components/planet-3d"
+import { AphelionLogo } from "@/components/aphelion-logo"
 import { Ruler, Clock, Compass, ArrowDown, Thermometer, Moon as MoonIcon, Weight, Calendar, Star as StarIcon, type LucideIcon } from "lucide-react"
 
 const SERIF_DETAIL = "'Playfair Display', 'Cormorant Garamond', 'Times New Roman', serif"
@@ -28,6 +29,27 @@ type View = "intro" | "journey" | "planet"
 type DetailTab = "info" | "quiz"
 
 const NAV_STATE_KEY = "aphelion.nav-state"
+const PLANET_PROGRESS_KEY = "aphelion.planet-progress"
+
+type PlanetProgress = Record<string, { factsRead?: boolean; quizCompleted?: boolean }>
+
+function triggerHaptic(pattern: number | number[] = 10) {
+  if (typeof window === "undefined") return
+  const isTouch = window.matchMedia("(pointer: coarse)").matches
+  if (!isTouch || !("vibrate" in navigator)) return
+  navigator.vibrate(pattern)
+}
+
+function readPlanetProgress(): PlanetProgress {
+  if (typeof window === "undefined") return {}
+  try {
+    const raw = window.sessionStorage.getItem(PLANET_PROGRESS_KEY)
+    if (!raw) return {}
+    return JSON.parse(raw) as PlanetProgress
+  } catch {
+    return {}
+  }
+}
 
 interface PersistedNavState {
   view: View
@@ -817,160 +839,130 @@ function CSSPlanet({ name, size, animate: doAnimate = false }: { name: string; s
 }
 
 // ─── Intro Screen ─────────────────────────────────────────────────────────────
-// Astronaut images: place 4 files at public/astronauts/photo-1.jpg … photo-4.jpg
 
-function IntroScreen({ onEnter }: { onEnter: () => void }) {
+function IntroScreen({
+  onEnter,
+  resumeLabel,
+  onResume,
+}: {
+  onEnter: () => void
+  resumeLabel?: string | null
+  onResume?: () => void
+}) {
+  const [entering, setEntering] = useState(false)
+  const scrollIntent = useRef(0)
+  const prefersReducedMotion = useReducedMotion()
+
+  const startJourney = useCallback(() => {
+    if (entering) return
+    triggerHaptic([8, 20, 8])
+    setEntering(true)
+    window.setTimeout(() => onEnter(), prefersReducedMotion ? 120 : 1450)
+  }, [entering, onEnter, prefersReducedMotion])
+
+  const handleWheelEnter = useCallback((e: WheelEvent<HTMLDivElement>) => {
+    if (entering) return
+    if (e.deltaY <= 0) return
+    scrollIntent.current += e.deltaY
+    if (scrollIntent.current > 140) startJourney()
+  }, [entering, startJourney])
+
   return (
-        <div
-      className="fixed inset-0 overflow-hidden"
-      style={{
-        background: "#000510",
-      }}
-    >
+    <div className="fixed inset-0 overflow-hidden bg-[#030710] text-white" onWheel={handleWheelEnter}>
+      {/* Deep space background + vignette */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(20,56,110,0.28)_0%,rgba(3,7,16,0.96)_55%,#02050b_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(35,81,162,0.22)_0%,transparent_52%)]" />
 
-      {/* ── Astronaut photo carousel ── */}
+      {/* Earth scene; starts as "above Earth" and descends on enter */}
       <motion.div
-        className="absolute -inset-6"
-        aria-hidden="true"
-        animate={{
-          x: ["-0.7%", "0.7%", "-0.7%"],
-          y: ["0.12%", "-0.12%", "0.12%"],
-        }}
-        transition={{
-          duration: 42,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        style={{
-          backgroundImage: "url(/astronauts/astronaut1.jpg)",
-          backgroundSize: "cover",
-          backgroundPosition: "center 30%",
-          willChange: "transform",
-        }}
+        className="absolute inset-0"
+        animate={entering ? (prefersReducedMotion ? { opacity: 1 } : { scale: 1.46, y: -180 }) : { scale: 1, y: 0 }}
+        transition={{ duration: prefersReducedMotion ? 0.2 : 1.7, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <Planet3D
+          name="earth"
+          showStars
+          enableControls={false}
+          enableZoom={false}
+          autoRotate
+          rotationSpeed={0.04}
+          position={[0, -1.34, 0]}
+          cameraZ={2.95}
+        />
+      </motion.div>
+
+      {/* Click hotspot over Earth so clicking the planet also starts journey */}
+      <button
+        aria-label="Enter Earth journey"
+        onClick={startJourney}
+        className="absolute bottom-0 left-1/2 z-20 h-[42vh] w-[68vw] -translate-x-1/2 rounded-full"
+        style={{ cursor: "pointer", background: "transparent" }}
       />
 
+      {/* Readability overlays */}
+      <motion.div
+        className="absolute inset-0 z-10 bg-[linear-gradient(to_bottom,rgba(2,7,16,0.28)_0%,rgba(2,7,16,0.58)_46%,rgba(2,7,16,0.9)_100%)]"
+        animate={entering ? { opacity: 0.2 } : { opacity: 1 }}
+        transition={{ duration: 1.2 }}
+      />
+      <motion.div
+        className="absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,transparent_28%,rgba(2,7,16,0.5)_70%,rgba(2,7,16,0.92)_100%)]"
+        animate={entering ? { opacity: 0.5 } : { opacity: 1 }}
+        transition={{ duration: 1.2 }}
+      />
 
-      {/* Multi-layer dark overlay so text stays readable */}
-      <div className="absolute inset-0"
-        style={{ background: "linear-gradient(to bottom, rgba(0,5,16,0.25) 0%, rgba(0,5,16,0.55) 50%, rgba(0,5,16,0.92) 100%)" }} />
-      <div className="absolute inset-0"
-        style={{ background: "radial-gradient(ellipse 100% 60% at 50% 100%, rgba(0,5,16,0.9) 0%, transparent 70%)" }} />
-
-      {/* ── Glassmorphism card ── */}
-      <div className="absolute inset-0 flex items-center justify-center px-6">
-        <motion.div
-          className="w-full text-center py-8 sm:py-12 px-5 sm:px-10 rounded-2xl sm:rounded-3xl"
+      {/* Hero copy + CTA */}
+      <motion.div
+        className="absolute inset-0 z-20 flex flex-col items-center justify-center px-6 text-center"
+        initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 18 }}
+        animate={entering ? (prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -28 }) : { opacity: 1, y: 0 }}
+        transition={{ duration: prefersReducedMotion ? 0.18 : 0.75, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="text-[10px] tracking-[0.38em] text-white/75 sm:text-xs">SOLAR SYSTEM EXPLORER</div>
+        <h1
+          className="mt-2 text-white/95"
           style={{
-            maxWidth: 620,
-            background: "rgba(0, 5, 16, 0.68)",
-            backdropFilter: "blur(28px)",
-            WebkitBackdropFilter: "blur(28px)",
-            border: "1px solid rgba(255,255,255,0.09)",
-            boxShadow: "0 0 80px rgba(0,212,255,0.06), 0 0 160px rgba(124,58,237,0.04), inset 0 1px 0 rgba(255,255,255,0.06)",
+            fontFamily: SERIF_DETAIL,
+            fontSize: "clamp(3rem, 8vw, 5.4rem)",
+            letterSpacing: "0.2em",
+            lineHeight: 1,
           }}
-          initial={{ opacity: 0, y: 40, scale: 0.96 }}
-          animate={{ opacity: 0.75, y: 0, scale: 1 }}
-          transition={{ duration: 1.2, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* App name badge */}
-          <motion.div
-            className="inline-flex items-center gap-3 mb-5 sm:mb-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-          >
-            <div className="h-px w-10 bg-gradient-to-r from-transparent to-cyan-400/60" />
-            <span className="text-cyan-400/70 text-[10px] tracking-[0.45em]"
-              style={{ fontFamily: "var(--font-orbitron)" }}>
-              APHELION · SOLAR SYSTEM EXPLORER
-            </span>
-            <div className="h-px w-10 bg-gradient-to-l from-transparent to-cyan-400/60" />
-          </motion.div>
+          APHELION
+        </h1>
+        <div className="mt-4 h-px w-12 bg-cyan-300/90" />
+        <p className="mt-5 max-w-2xl text-xs leading-relaxed text-white/70 sm:text-sm">
+          Explore the solar system through a cinematic, interactive journey. Discover each world,
+          learn key facts, and test your knowledge with quizzes as you travel from the Sun to Pluto.
+        </p>
 
-          {/* Astronaut welcome headline */}
-          <motion.h1
-            className="font-black leading-tight mb-5"
-            style={{
-              fontFamily: "var(--font-orbitron)",
-              fontSize: "clamp(1.9rem, 5vw, 3.4rem)",
-              background: "linear-gradient(135deg, #ffffff 0%, #cce8ff 45%, #00d4ff 75%, #ffffff 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.9 }}
-          >
-            COMMANDER,<br />ARE YOU READY?
-          </motion.h1>
+        <motion.button
+          className="mt-8 rounded-full border border-white/25 bg-white px-8 py-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-black shadow-[0_0_45px_rgba(80,170,255,0.25)] transition hover:bg-white/90 sm:px-10"
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={startJourney}
+          disabled={entering}
+        >
+          {entering ? "Entering..." : "Get Started"}
+        </motion.button>
 
-          {/* Friendly welcome copy */}
-          <motion.p
-            className="mb-3 leading-relaxed"
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: "clamp(0.95rem, 2vw, 1.1rem)",
-              color: "rgba(200,220,240,0.85)",
-              fontWeight: 300,
-            }}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 1.1 }}
-          >
-            Welcome aboard. I&apos;m your guide through the cosmos.
-          </motion.p>
-          <motion.p
-            className="mb-7 sm:mb-10 leading-relaxed"
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: "clamp(0.85rem, 1.8vw, 1rem)",
-              color: "rgba(148,163,184,0.8)",
-              fontWeight: 300,
-            }}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 1.3 }}
-          >
-            We&apos;re about to travel{" "}
-            <span style={{ color: "#00d4ff" }}>5.9 billion kilometres</span>{" "}
-            — from the blazing Sun to the frozen edge of our solar system.
-            <br />Ten worlds. Fifty questions. One unforgettable journey.
-          </motion.p>
+        <div className="mt-5 text-[10px] uppercase tracking-[0.28em] text-white/45">
+          or scroll down to begin
+        </div>
 
-          {/* CTA */}
-          <motion.button
-            className="relative group w-full sm:w-auto px-8 sm:px-12 py-4 rounded-full text-white font-semibold overflow-hidden min-h-[52px]"
-            style={{
-              fontFamily: "var(--font-orbitron)",
-              fontSize: "0.8rem",
-              letterSpacing: "0.22em",
+        {resumeLabel && onResume && (
+          <button
+            onClick={() => {
+              triggerHaptic(10)
+              onResume()
             }}
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 1.6 }}
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.96 }}
-            onClick={onEnter}
+            className="mt-4 min-h-9 rounded-full border border-cyan-200/30 bg-cyan-300/10 px-3.5 text-[10px] uppercase tracking-[0.18em] text-cyan-100/90 transition hover:bg-cyan-300/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80"
+            aria-label={`Resume journey ${resumeLabel}`}
           >
-            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600
-              opacity-90 group-hover:opacity-100 transition-all duration-300" />
-            <span className="absolute inset-0 rounded-full border border-cyan-400/40
-              group-hover:border-cyan-300/70 transition-colors duration-300" />
-            {/* Outer glow on hover */}
-            <span className="absolute -inset-1 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-300"
-              style={{ boxShadow: "0 0 40px #00d4ff" }} />
-            <span className="relative z-10 flex items-center justify-center gap-3">
-              BEGIN MISSION
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                <path d="M2.5 7.5h10M9 3.5l4 4-4 4" stroke="currentColor" strokeWidth="1.5"
-                  strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-          </motion.button>
-
-        </motion.div>
-      </div>
+            Resume Journey {resumeLabel}
+          </button>
+        )}
+      </motion.div>
     </div>
   )
 }
@@ -1508,8 +1500,8 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
       style={{ background: "#05070d", paddingTop: 72 }}>
 
       {/* Wordmark — matches TourView aesthetic */}
-      <div className="absolute left-6 top-5 z-30 text-sm font-medium tracking-wide sm:left-10 sm:top-6">
-        aphelion<span className="text-cyan-300">·</span>
+      <div className="absolute left-6 top-5 z-30 sm:left-10 sm:top-6">
+        <AphelionLogo wordmarkClassName="text-[12px] tracking-[0.32em]" iconClassName="h-6 w-6" />
       </div>
 
       {/* Background stars */}
@@ -1665,8 +1657,10 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
 function ViewToggle({ mode, onChange }: { mode: "journey" | "orrery"; onChange: (m: "journey" | "orrery") => void }) {
   return (
     <div
-      className="fixed top-4 right-4 sm:top-5 sm:right-8 z-50 flex items-center gap-4 rounded-full border border-white/10 bg-black/40 px-4 py-2 backdrop-blur-md sm:gap-5 sm:px-5"
+      className="fixed top-4 right-4 sm:top-5 sm:right-8 z-50 flex items-center gap-4 rounded-full border border-white/10 bg-black/50 px-4 py-2.5 backdrop-blur-md sm:gap-5 sm:px-5"
       style={{ boxShadow: "0 6px 24px rgba(0,0,0,0.35)" }}
+      role="tablist"
+      aria-label="Exploration mode"
     >
       {(["orrery", "journey"] as const).map((m, i) => {
         const active = mode === m
@@ -1679,7 +1673,10 @@ function ViewToggle({ mode, onChange }: { mode: "journey" | "orrery"; onChange: 
             {i > 0 && <span className="h-3 w-px bg-white/20" aria-hidden />}
             <button
               onClick={() => onChange(m)}
-              className="group relative flex flex-col items-center gap-1 px-0.5 transition"
+              className="group relative flex min-h-9 flex-col items-center justify-center gap-1 px-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05070d]"
+              role="tab"
+              aria-selected={active}
+              aria-label={`Switch to ${label.long.toLowerCase()} view`}
               style={{
                 color: active ? "#ffffff" : "rgba(255,255,255,0.65)",
                 textShadow: active ? "0 0 12px rgba(255,255,255,0.25)" : "none",
@@ -1708,41 +1705,75 @@ function ViewToggle({ mode, onChange }: { mode: "journey" | "orrery"; onChange: 
 
 // ─── Quiz Component ───────────────────────────────────────────────────────────
 
-function Quiz({ questions }: { questions: QuizQuestion[] }) {
+function Quiz({
+  questions,
+  quizKey,
+  onQuizComplete,
+}: {
+  questions: QuizQuestion[]
+  quizKey: string
+  onQuizComplete?: () => void
+}) {
+  const prefersReducedMotion = useReducedMotion()
   const [current, setCurrent] = useState(0)
-  const [selected, setSelected] = useState<number | null>(null)
-  const [answered, setAnswered] = useState(false)
-  const [score, setScore] = useState(0)
   const [done, setDone] = useState(false)
   const [answers, setAnswers] = useState<(number | null)[]>(Array(questions.length).fill(null))
 
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      const raw = window.sessionStorage.getItem(`aphelion.quiz-progress.${quizKey}`)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as { current: number; done: boolean; answers: (number | null)[] }
+      if (Array.isArray(parsed.answers) && parsed.answers.length === questions.length) {
+        setAnswers(parsed.answers)
+      }
+      if (typeof parsed.current === "number") {
+        setCurrent(Math.max(0, Math.min(parsed.current, questions.length - 1)))
+      }
+      setDone(Boolean(parsed.done))
+    } catch {
+      // noop
+    }
+  }, [questions.length, quizKey])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const payload = { current, done, answers }
+    window.sessionStorage.setItem(`aphelion.quiz-progress.${quizKey}`, JSON.stringify(payload))
+  }, [answers, current, done, quizKey])
+
+  const selected = answers[current]
+  const answered = selected !== null
+  const score = answers.reduce<number>((acc, answer, i) => acc + (answer === questions[i].correct ? 1 : 0), 0)
   const q = questions[current]
+  const percent = Math.round(((current + 1) / questions.length) * 100)
 
   const handleSelect = (i: number) => {
-    if (answered) return
-    setSelected(i)
-    setAnswered(true)
     const newAnswers = [...answers]
     newAnswers[current] = i
     setAnswers(newAnswers)
-    if (i === q.correct) setScore((s) => s + 1)
+    triggerHaptic(10)
   }
 
   const handleNext = () => {
+    triggerHaptic([8, 12, 8])
     if (current < questions.length - 1) {
       setCurrent((c) => c + 1)
-      setSelected(null)
-      setAnswered(false)
     } else {
       setDone(true)
+      onQuizComplete?.()
     }
   }
 
+  const handlePrev = () => {
+    triggerHaptic(8)
+    if (current > 0) setCurrent((c) => c - 1)
+  }
+
   const handleRestart = () => {
+    triggerHaptic([10, 16, 10])
     setCurrent(0)
-    setSelected(null)
-    setAnswered(false)
-    setScore(0)
     setDone(false)
     setAnswers(Array(questions.length).fill(null))
   }
@@ -1756,8 +1787,9 @@ function Quiz({ questions }: { questions: QuizQuestion[] }) {
     const tone = pct >= 80 ? "rgb(134,239,172)" : pct >= 60 ? "rgba(255,255,255,0.85)" : "rgb(252,165,165)"
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        aria-live="polite"
       >
         <div className="mb-2 text-[10px] tracking-[0.35em] text-white/40">
           MISSION DEBRIEF
@@ -1781,7 +1813,7 @@ function Quiz({ questions }: { questions: QuizQuestion[] }) {
         </div>
 
         {/* Review list */}
-        <div className="mb-8 space-y-2">
+        <div className="mb-8 max-h-[44vh] space-y-2 overflow-y-auto pr-1">
           {questions.map((qz, i) => {
             const correct = answers[i] === qz.correct
             return (
@@ -1809,8 +1841,9 @@ function Quiz({ questions }: { questions: QuizQuestion[] }) {
         </div>
 
         <button
-          className="group flex items-center gap-3 text-[11px] tracking-[0.32em] text-white/85 transition hover:text-white"
+          className="group inline-flex min-h-11 items-center gap-3 rounded-full border border-white/15 px-4 text-[11px] tracking-[0.32em] text-white/90 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80"
           onClick={handleRestart}
+          aria-label="Restart quiz"
         >
           <span className="h-px w-10 bg-white/30 transition-all group-hover:w-14 group-hover:bg-white/60" />
           RETRY QUIZ
@@ -1821,9 +1854,9 @@ function Quiz({ questions }: { questions: QuizQuestion[] }) {
   }
 
   return (
-    <div>
+    <div aria-live="polite" aria-label="Planet quiz">
       {/* Progress — minimal hairline segments */}
-      <div className="mb-6 flex items-center gap-1">
+      <div className="mb-4 flex items-center gap-1" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Quiz progress">
         {questions.map((_, i) => {
           const passed = i < current
           const isCurrent = i === current
@@ -1831,32 +1864,33 @@ function Quiz({ questions }: { questions: QuizQuestion[] }) {
           if (passed) bg = answers[i] === questions[i].correct ? "rgba(134,239,172,0.7)" : "rgba(252,165,165,0.7)"
           else if (isCurrent) bg = "rgba(255,255,255,0.85)"
           return (
-            <div key={i} className="h-px flex-1 transition-all" style={{ background: bg }} />
+            <div key={i} className="h-0.5 flex-1 rounded-full transition-all" style={{ background: bg }} />
           )
         })}
       </div>
 
-      <div className="mb-4 flex items-center justify-between text-[10px] tracking-[0.32em] text-white/40">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-[10px] tracking-[0.28em] text-white/55 sm:tracking-[0.32em]">
         <span>QUESTION {String(current + 1).padStart(2, "0")} / {String(questions.length).padStart(2, "0")}</span>
-        <span>SCORE {score}</span>
+        <span>SCORE {score} · {percent}%</span>
       </div>
 
       <AnimatePresence mode="wait">
         <motion.div
           key={current}
-          initial={{ opacity: 0, x: 16 }}
+          initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -16 }}
-          transition={{ duration: 0.25 }}
+          exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -16 }}
+          transition={{ duration: prefersReducedMotion ? 0.12 : 0.25 }}
         >
           <h3
-            className="mb-6 leading-snug text-white/95"
-            style={{ fontFamily: SERIF_DETAIL, fontSize: "clamp(1.15rem, 2vw, 1.5rem)" }}
+            className="mb-5 leading-snug text-white/95"
+            style={{ fontFamily: SERIF_DETAIL, fontSize: "clamp(1.05rem, 4.5vw, 1.5rem)" }}
+            id={`quiz-question-${current}`}
           >
             {q.question}
           </h3>
 
-          <div className="mb-6 space-y-2">
+          <div className="mb-6 space-y-2" role="radiogroup" aria-labelledby={`quiz-question-${current}`}>
             {q.options.map((opt, i) => {
               const isCorrect = answered && i === q.correct
               const isWrongPick = answered && i === selected && i !== q.correct
@@ -1877,26 +1911,16 @@ function Quiz({ questions }: { questions: QuizQuestion[] }) {
               return (
                 <button
                   key={i}
-                  disabled={answered}
-                  className="group flex w-full items-center gap-4 rounded-md px-4 py-3 text-left text-[13px] backdrop-blur-sm transition disabled:cursor-default"
+                  className="group flex min-h-12 w-full items-center gap-3 rounded-lg px-4 py-3.5 text-left text-[14px] leading-relaxed backdrop-blur-sm transition disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80"
                   style={{
                     background: bg,
                     border: `1px solid ${borderColor}`,
                     color: textColor,
                   }}
                   onClick={() => handleSelect(i)}
-                  onMouseOver={(e) => {
-                    if (!answered) {
-                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)"
-                      e.currentTarget.style.background = "rgba(255,255,255,0.04)"
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (!answered) {
-                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"
-                      e.currentTarget.style.background = "rgba(0,0,0,0.3)"
-                    }
-                  }}
+                  role="radio"
+                  aria-checked={selected === i}
+                  aria-label={`Option ${String.fromCharCode(65 + i)}: ${opt}`}
                 >
                   <span
                     className="text-[10px] tracking-[0.2em] text-white/35"
@@ -1924,7 +1948,7 @@ function Quiz({ questions }: { questions: QuizQuestion[] }) {
           <AnimatePresence>
             {answered && (
               <motion.div
-                className="mb-6 border-l-2 pl-4 text-[12px] leading-relaxed text-white/65"
+                className="mb-6 rounded-md border-l-2 bg-white/[0.02] p-3 pl-4 text-[13px] leading-relaxed text-white/75 sm:text-[12px]"
                 style={{
                   borderLeftColor: selected === q.correct ? "rgba(134,239,172,0.5)" : "rgba(252,165,165,0.5)",
                 }}
@@ -1942,18 +1966,31 @@ function Quiz({ questions }: { questions: QuizQuestion[] }) {
             )}
           </AnimatePresence>
 
-          {answered && (
-            <motion.button
-              className="group flex items-center gap-3 text-[11px] tracking-[0.32em] text-white/85 transition hover:text-white"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              onClick={handleNext}
-            >
-              <span className="h-px w-10 bg-white/30 transition-all group-hover:w-14 group-hover:bg-white/60" />
-              {current < questions.length - 1 ? "NEXT QUESTION" : "SEE RESULTS"}
-              <span aria-hidden>→</span>
-            </motion.button>
-          )}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {current > 0 && (
+              <button
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-4 text-[11px] tracking-[0.2em] text-white/85 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80"
+                onClick={handlePrev}
+                aria-label="Go to previous question"
+              >
+                <span aria-hidden>←</span>
+                PREVIOUS
+              </button>
+            )}
+            {answered && (
+              <motion.button
+                className="group inline-flex min-h-11 items-center gap-3 rounded-full border border-white/15 px-4 text-[11px] tracking-[0.28em] text-white/90 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 sm:tracking-[0.32em]"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onClick={handleNext}
+                aria-label={current < questions.length - 1 ? "Go to next question" : "Show quiz results"}
+              >
+                <span className="h-px w-10 bg-white/30 transition-all group-hover:w-14 group-hover:bg-white/60" />
+                {current < questions.length - 1 ? "NEXT QUESTION" : "SEE RESULTS"}
+                <span aria-hidden>→</span>
+              </motion.button>
+            )}
+          </div>
         </motion.div>
       </AnimatePresence>
     </div>
@@ -1969,6 +2006,8 @@ function PlanetDetailView({
   onModeChange,
   initialTab = "info",
   onTabChange,
+  onFactsViewed,
+  onQuizCompleted,
 }: {
   planet: PlanetData
   onClose: () => void
@@ -1976,7 +2015,10 @@ function PlanetDetailView({
   onModeChange: (m: "journey" | "orrery") => void
   initialTab?: DetailTab
   onTabChange?: (tab: DetailTab) => void
+  onFactsViewed?: (planetName: string) => void
+  onQuizCompleted?: (planetName: string) => void
 }) {
+  const prefersReducedMotion = useReducedMotion()
   const [tab, setTab] = useState<DetailTab>(initialTab)
 
   useEffect(() => {
@@ -1988,12 +2030,24 @@ function PlanetDetailView({
   }, [onTabChange, tab])
 
   useEffect(() => {
+    if (tab === "info") onFactsViewed?.(planet.name)
+  }, [onFactsViewed, planet.name, tab])
+
+  useEffect(() => {
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
     return () => {
       document.body.style.overflow = prevOverflow
     }
   }, [])
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [onClose])
 
   const subtitle =
     planet.distanceFromSun === 0
@@ -2007,11 +2061,11 @@ function PlanetDetailView({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: prefersReducedMotion ? 0.15 : 0.4 }}
     >
       {/* Wordmark — matches explore view */}
-      <div className="fixed left-6 top-5 z-30 text-sm font-medium tracking-wide sm:left-10 sm:top-6">
-        aphelion<span className="text-cyan-300">·</span>
+      <div className="fixed left-6 top-5 z-30 sm:left-10 sm:top-6">
+        <AphelionLogo wordmarkClassName="text-[12px] tracking-[0.32em]" iconClassName="h-6 w-6" />
       </div>
 
       {/* View toggle — same as explore */}
@@ -2040,12 +2094,13 @@ function PlanetDetailView({
         />
       ))}
 
-      <div className="relative z-10 mx-auto max-w-6xl px-5 pb-20 pt-20 sm:px-8 sm:pt-24">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 pb-20 pt-20 sm:px-8 sm:pt-24">
         {/* Back link — minimal */}
         <motion.button
-          className="mb-10 flex items-center gap-2 text-[11px] tracking-[0.3em] text-white/55 transition-colors hover:text-white sm:mb-12"
+          className="mb-10 flex min-h-10 items-center gap-2 rounded-full border border-white/10 px-3 text-[11px] tracking-[0.24em] text-white/70 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 sm:mb-12 sm:tracking-[0.3em]"
           onClick={onClose}
           whileHover={{ x: -3 }}
+          aria-label="Back to planet exploration"
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M13 8H3M7 12l-4-4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -2054,10 +2109,10 @@ function PlanetDetailView({
         </motion.button>
 
         {/* Hero row */}
-        <div className="mb-14 grid grid-cols-1 items-center gap-8 lg:mb-20 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
+        <div className="mb-14 grid grid-cols-1 items-center gap-6 lg:mb-20 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
           {/* 3D Planet */}
           <motion.div
-            className="relative h-[300px] w-full sm:h-[420px] lg:h-[520px]"
+            className="relative h-[260px] w-full sm:h-[420px] lg:h-[520px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
@@ -2122,15 +2177,18 @@ function PlanetDetailView({
         </div>
 
         {/* Tabs — minimal text style */}
-        <div className="mb-8 flex items-center gap-6 border-b border-white/10 pb-2 sm:mb-10">
+        <div className="mb-8 flex items-center gap-4 border-b border-white/10 pb-2 sm:mb-10 sm:gap-6" role="tablist" aria-label="Planet detail tabs">
           {(["info", "quiz"] as const).map((t) => {
             const active = tab === t
             return (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className="group relative flex flex-col items-center gap-2 pb-2 transition"
+                className="group relative flex min-h-10 flex-col items-center justify-center gap-2 pb-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80"
                 style={{ color: active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.4)" }}
+                role="tab"
+                aria-selected={active}
+                aria-label={t === "info" ? "Facts tab" : "Quiz tab"}
               >
                 <span className="text-[11px] tracking-[0.32em]">
                   {t === "info" ? "FACTS" : "QUIZ"}
@@ -2202,7 +2260,11 @@ function PlanetDetailView({
               transition={{ duration: 0.3 }}
               className="max-w-3xl"
             >
-              <Quiz questions={planet.quiz} />
+              <Quiz
+                questions={planet.quiz}
+                quizKey={planet.name}
+                onQuizComplete={() => onQuizCompleted?.(planet.name)}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -2218,15 +2280,20 @@ function PlanetDetailView({
 type ExploreMode = "journey" | "orrery"
 
 export default function SpaceExploration() {
+  const prefersReducedMotion = useReducedMotion()
   const [view, setView] = useState<View>("intro")
   const [exploreMode, setExploreMode] = useState<ExploreMode>("journey")
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetData | null>(null)
   const [detailTab, setDetailTab] = useState<DetailTab>("info")
+  const [planetProgress, setPlanetProgress] = useState<PlanetProgress>({})
+  const [resumeLabel, setResumeLabel] = useState<string | null>(null)
+  const [resumeState, setResumeState] = useState<PersistedNavState | null>(null)
   const [navStateReady, setNavStateReady] = useState(false)
 
   const handleEnter = useCallback(() => setView("journey"), [])
 
   const handleSelectPlanet = useCallback((p: PlanetData) => {
+    triggerHaptic([8, 12, 8])
     setDetailTab("info")
     setSelectedPlanet(p)
     setView("planet")
@@ -2245,6 +2312,7 @@ export default function SpaceExploration() {
 
   useEffect(() => {
     const persisted = readPersistedNavState()
+    setResumeState(persisted)
     if (persisted) {
       setView(persisted.view)
       setExploreMode(persisted.exploreMode)
@@ -2254,6 +2322,22 @@ export default function SpaceExploration() {
     }
     const savedTab = window.sessionStorage.getItem("aphelion.detail-tab")
     if (savedTab === "quiz") setDetailTab("quiz")
+    const savedProgress = readPlanetProgress()
+    setPlanetProgress(savedProgress)
+    if (persisted?.selectedPlanetName) {
+      const quizRaw = window.sessionStorage.getItem(`aphelion.quiz-progress.${persisted.selectedPlanetName}`)
+      if (quizRaw) {
+        try {
+          const parsed = JSON.parse(quizRaw) as { current: number; done: boolean }
+          const step = parsed.done ? "Quiz complete" : `Quiz Q${(parsed.current ?? 0) + 1}`
+          setResumeLabel(`at ${persisted.selectedPlanetName} / ${step}`)
+        } catch {
+          setResumeLabel(`at ${persisted.selectedPlanetName}`)
+        }
+      } else {
+        setResumeLabel(`at ${persisted.selectedPlanetName}`)
+      }
+    }
     setNavStateReady(true)
   }, [])
 
@@ -2274,12 +2358,36 @@ export default function SpaceExploration() {
     window.sessionStorage.setItem("aphelion.detail-tab", detailTab)
   }, [navStateReady, detailTab])
 
+  useEffect(() => {
+    if (!navStateReady) return
+    if (typeof window === "undefined") return
+    window.sessionStorage.setItem(PLANET_PROGRESS_KEY, JSON.stringify(planetProgress))
+  }, [navStateReady, planetProgress])
+
+  if (!navStateReady) {
+    return <div className="fixed inset-0 bg-[#030710]" />
+  }
+
   return (
     <>
       <AnimatePresence mode="wait">
         {view === "intro" && (
-          <motion.div key="intro" exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
-            <IntroScreen onEnter={handleEnter} />
+          <motion.div key="intro" exit={{ opacity: 0 }} transition={{ duration: prefersReducedMotion ? 0.15 : 0.5 }}>
+            <IntroScreen
+              onEnter={handleEnter}
+              resumeLabel={resumeLabel}
+              onResume={
+                resumeState
+                  ? () => {
+                    setView(resumeState.view)
+                    setExploreMode(resumeState.exploreMode)
+                    if (resumeState.selectedPlanetName) {
+                      setSelectedPlanet(PLANETS.find((p) => p.name === resumeState.selectedPlanetName) ?? null)
+                    }
+                  }
+                  : undefined
+              }
+            />
           </motion.div>
         )}
 
@@ -2296,7 +2404,11 @@ export default function SpaceExploration() {
                 <motion.div key="explore"
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   transition={{ duration: 0.4 }}>
-                  <TourView planets={PLANETS} onSelectPlanet={(p) => handleSelectPlanet(p as PlanetData)} />
+                  <TourView
+                    planets={PLANETS}
+                    onSelectPlanet={(p) => handleSelectPlanet(p as PlanetData)}
+                    completion={planetProgress}
+                  />
                 </motion.div>
               ) : (
                 <motion.div key="orrery"
@@ -2317,6 +2429,18 @@ export default function SpaceExploration() {
             mode={exploreMode}
             initialTab={detailTab}
             onTabChange={setDetailTab}
+            onFactsViewed={(planetName) => {
+              setPlanetProgress((prev) => ({
+                ...prev,
+                [planetName]: { ...prev[planetName], factsRead: true },
+              }))
+            }}
+            onQuizCompleted={(planetName) => {
+              setPlanetProgress((prev) => ({
+                ...prev,
+                [planetName]: { ...prev[planetName], quizCompleted: true },
+              }))
+            }}
             onModeChange={(m) => {
               setExploreMode(m)
               setView("journey")

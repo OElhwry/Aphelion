@@ -2,7 +2,7 @@
 
 import { Suspense, useRef, useMemo } from "react"
 import { Canvas, useFrame, useLoader } from "@react-three/fiber"
-import { OrbitControls, Stars } from "@react-three/drei"
+import { OrbitControls, Stars, Html } from "@react-three/drei"
 import * as THREE from "three"
 
 // Local 2K textures from Solar System Scope (CC-BY-4.0) in public/textures/planets/.
@@ -36,6 +36,20 @@ const PLANET_TEXTURES: Record<PlanetKey, { map: string; bump?: string; normal?: 
 
 function nameToKey(name: string): PlanetKey {
   return name.toLowerCase() as PlanetKey
+}
+
+function PlanetLoader() {
+  return (
+    <Html center>
+      <div className="rounded-xl border border-white/15 bg-black/55 px-4 py-3 text-center backdrop-blur-sm">
+        <div className="mx-auto mb-2 h-6 w-6 rounded-full border border-cyan-200/40 border-t-cyan-300 animate-spin" />
+        <div className="text-[10px] uppercase tracking-[0.22em] text-white/80">Loading planet</div>
+        <div className="mt-2 h-1.5 w-28 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full w-2/3 animate-pulse rounded-full bg-gradient-to-r from-cyan-300/75 to-white/70" />
+        </div>
+      </div>
+    </Html>
+  )
 }
 
 export function PlanetMesh({
@@ -173,7 +187,7 @@ export function Planet3D({
 
       {showStars && <Stars radius={80} depth={40} count={3500} factor={3} saturation={0} fade speed={0.4} />}
 
-      <Suspense fallback={null}>
+      <Suspense fallback={<PlanetLoader />}>
         <PlanetMesh planetKey={key} autoRotate={autoRotate} rotationSpeed={rotationSpeed} position={position} />
       </Suspense>
 
