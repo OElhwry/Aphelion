@@ -229,7 +229,7 @@ const PLANETS: PlanetData[] = [
       { label: "Gravity", value: "8.87 m/s²" },
     ],
     facts: [
-      "Venus rotates backwards compared to most planets — the Sun rises in the west.",
+      "Venus rotates backwards compared to most planets, so the Sun rises in the west.",
       "A day on Venus is longer than a year on Venus.",
       "Atmospheric pressure on Venus is 92 times that of Earth's surface.",
     ],
@@ -244,7 +244,7 @@ const PLANETS: PlanetData[] = [
         question: "In which direction does the Sun rise on Venus?",
         options: ["East", "North", "West", "South"],
         correct: 2,
-        explanation: "Venus rotates in retrograde — opposite to most planets — so the Sun rises in the west.",
+        explanation: "Venus rotates in retrograde, opposite to most planets, so the Sun rises in the west.",
       },
       {
         question: "How does Venus's atmospheric pressure compare to Earth's?",
@@ -1505,7 +1505,18 @@ const ORRERY_CONFIG = [
 function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) => void }) {
   const [scale, setScale] = useState(1)
   const [hoveredOrbit, setHoveredOrbit] = useState<string | null>(null)
+  const [elapsed, setElapsed] = useState(0)
   const previewPlanetName = hoveredOrbit ?? "Earth"
+  const starField = useRef(
+    Array.from({ length: 260 }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      width: Math.random() * 1.8 + 0.3,
+      height: Math.random() * 1.8 + 0.3,
+      opacity: Math.random() * 0.5 + 0.08,
+    }))
+  )
 
   useEffect(() => {
     const update = () => {
@@ -1516,6 +1527,16 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
     update()
     window.addEventListener("resize", update)
     return () => window.removeEventListener("resize", update)
+  }, [])
+
+  useEffect(() => {
+    let raf = 0
+    const tick = (ts: number) => {
+      setElapsed(ts / 1000)
+      raf = window.requestAnimationFrame(tick)
+    }
+    raf = window.requestAnimationFrame(tick)
+    return () => window.cancelAnimationFrame(raf)
   }, [])
 
   return (
@@ -1546,14 +1567,14 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
       </div>
 
       {/* Background stars */}
-      {Array.from({ length: 260 }).map((_, i) => (
-        <div key={i} className="absolute rounded-full bg-white pointer-events-none"
+      {starField.current.map((star) => (
+        <div key={star.id} className="absolute rounded-full bg-white pointer-events-none"
           style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            width: Math.random() * 1.8 + 0.3,
-            height: Math.random() * 1.8 + 0.3,
-            opacity: Math.random() * 0.5 + 0.08,
+            left: star.left,
+            top: star.top,
+            width: star.width,
+            height: star.height,
+            opacity: star.opacity,
           }} />
       ))}
 
@@ -1592,67 +1613,52 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
           ))}
         </svg>
 
-        {/* Sun at center */}
-        <button
-          className="absolute"
-          style={{ top: 450 - 22, left: 450 - 22 }}
-          onClick={() => onSelectPlanet(PLANETS.find(p => p.name === "Sun")!)}
-        >
-          <CSSPlanet name="Sun" size={44} />
-        </button>
+        {/* Stable 2D orrery bodies (reverted from 3D mesh layer) */}
+        <div className="absolute inset-0">
+          <button
+            className="absolute rounded-full"
+            style={{
+              left: 450 - 24,
+              top: 450 - 24,
+              width: 48,
+              height: 48,
+              background: PLANET_BG.Sun.bg,
+              boxShadow: "0 0 28px rgba(255,145,0,0.55), 0 0 55px rgba(255,109,0,0.3)",
+            }}
+            onMouseEnter={() => setHoveredOrbit("Sun")}
+            onMouseLeave={() => setHoveredOrbit(null)}
+            onClick={() => onSelectPlanet(PLANETS.find((p) => p.name === "Sun")!)}
+            aria-label="Explore Sun"
+          />
 
-        {/* Orbiting planets */}
-        {ORRERY_CONFIG.map((cfg) => {
-          const planet = PLANETS.find((p) => p.name === cfg.name)!
-          // Negative delay = start animation part-way through its cycle (= startAngle position)
-          const delay = -(cfg.period * cfg.startAngle / 360)
-
-          return (
-            <div
-              key={cfg.name}
-              className="absolute"
-              style={{
-                top: 450,
-                left: 450,
-                width: 0,
-                height: 0,
-                animationName: "orbit-cw",
-                animationDuration: `${cfg.period}s`,
-                animationTimingFunction: "linear",
-                animationIterationCount: "infinite",
-                animationDelay: `${delay}s`,
-              }}
-              onMouseEnter={() => setHoveredOrbit(cfg.name)}
-              onMouseLeave={() => setHoveredOrbit(null)}
-            >
-              {/* Counter-rotate so planet stays upright */}
-              {/* Use Math.max(cfg.pxSize, 20) for minimum 20px tap target in canvas space */}
+          {ORRERY_CONFIG.map((cfg) => {
+            const planet = PLANETS.find((p) => p.name === cfg.name)!
+            const styleCfg = PLANET_BG[cfg.name]
+            const angle = ((cfg.startAngle - 90) * Math.PI) / 180 + (elapsed * Math.PI * 2) / cfg.period
+            const x = 450 + cfg.orbitR * Math.cos(angle)
+            const y = 450 + cfg.orbitR * Math.sin(angle)
+            const size = Math.max(cfg.pxSize, 7)
+            return (
               <button
-                className="absolute group flex items-center justify-center"
+                key={`planet-${cfg.name}`}
+                className="absolute rounded-full transition-transform duration-200 hover:scale-110"
                 style={{
-                  left: cfg.orbitR - Math.max(cfg.pxSize, 20) / 2,
-                  top: -Math.max(cfg.pxSize, 20) / 2,
-                  width: Math.max(cfg.pxSize, 20),
-                  height: Math.max(cfg.pxSize, 20),
-                  animationName: "orbit-ccw",
-                  animationDuration: `${cfg.period}s`,
-                  animationTimingFunction: "linear",
-                  animationIterationCount: "infinite",
-                  animationDelay: `${delay}s`,
+                  left: x - size / 2,
+                  top: y - size / 2,
+                  width: size,
+                  height: size,
+                  background: styleCfg?.bg ?? planet.color,
+                  boxShadow: `${styleCfg?.insetShadow ?? ""}, 0 0 ${size * 1.2}px ${planet.glowColor}44`,
+                  filter: hoveredOrbit === cfg.name ? "brightness(1.15)" : "brightness(1)",
                 }}
+                onMouseEnter={() => setHoveredOrbit(cfg.name)}
+                onMouseLeave={() => setHoveredOrbit(null)}
                 onClick={() => onSelectPlanet(planet)}
-                title={cfg.name}
-              >
-                <div style={{
-                  transition: "transform 0.3s ease",
-                  transform: hoveredOrbit === cfg.name ? "scale(1.8)" : "scale(1)",
-                }}>
-                  <CSSPlanet name={cfg.name} size={cfg.pxSize} />
-                </div>
-              </button>
-            </div>
-          )
-        })}
+                aria-label={`Explore ${cfg.name}`}
+              />
+            )
+          })}
+        </div>
 
         {/* Planet labels — fixed position on the orbital ring at start angle */}
         {ORRERY_CONFIG.map((cfg) => {
@@ -2061,6 +2067,16 @@ function PlanetDetailView({
 }) {
   const prefersReducedMotion = useReducedMotion()
   const [tab, setTab] = useState<DetailTab>(initialTab)
+  const detailStars = useRef(
+    Array.from({ length: 160 }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      width: Math.random() * 1.6 + 0.3,
+      height: Math.random() * 1.6 + 0.3,
+      opacity: Math.random() * 0.45 + 0.08,
+    }))
+  )
 
   useEffect(() => {
     setTab(initialTab)
@@ -2072,7 +2088,7 @@ function PlanetDetailView({
 
   useEffect(() => {
     if (tab === "info") onFactsViewed?.(planet.name)
-  }, [onFactsViewed, planet.name, tab])
+  }, [planet.name, tab])
 
   useEffect(() => {
     const prevOverflow = document.body.style.overflow
@@ -2121,16 +2137,16 @@ function PlanetDetailView({
       />
 
       {/* Background stars — minimal, layered */}
-      {Array.from({ length: 160 }).map((_, i) => (
+      {detailStars.current.map((star) => (
         <div
-          key={i}
+          key={star.id}
           className="fixed rounded-full bg-white pointer-events-none"
           style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            width: Math.random() * 1.6 + 0.3,
-            height: Math.random() * 1.6 + 0.3,
-            opacity: Math.random() * 0.45 + 0.08,
+            left: star.left,
+            top: star.top,
+            width: star.width,
+            height: star.height,
+            opacity: star.opacity,
           }}
         />
       ))}
@@ -2477,10 +2493,13 @@ export default function SpaceExploration() {
             initialTab={detailTab}
             onTabChange={setDetailTab}
             onFactsViewed={(planetName) => {
-              setPlanetProgress((prev) => ({
-                ...prev,
-                [planetName]: { ...prev[planetName], factsRead: true },
-              }))
+              setPlanetProgress((prev) => {
+                if (prev[planetName]?.factsRead) return prev
+                return {
+                  ...prev,
+                  [planetName]: { ...prev[planetName], factsRead: true },
+                }
+              })
             }}
             onQuizCompleted={(planetName) => {
               setPlanetProgress((prev) => ({

@@ -10,8 +10,39 @@ const orbitron = Orbitron({
 })
 
 export const metadata: Metadata = {
-  title: "Aphelion - Solar System Explorer",
-  description: "A cinematic journey through our solar system — 10 worlds, 50 questions, 5.9 billion kilometres.",
+  metadataBase: new URL("https://aphelion.website"),
+  title: {
+    default: "Aphelion | Interactive Solar System Explorer",
+    template: "%s | Aphelion",
+  },
+  description:
+    "Explore the solar system in an interactive 3D-inspired experience. Learn planet facts, compare stats, and test your knowledge with quizzes from Mercury to Pluto.",
+  keywords: [
+    "solar system",
+    "planets",
+    "space education",
+    "astronomy",
+    "interactive learning",
+    "planet quiz",
+    "Aphelion",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "https://aphelion.website",
+    siteName: "Aphelion",
+    title: "Aphelion | Interactive Solar System Explorer",
+    description:
+      "Journey from the Sun to Pluto with immersive visuals, planet facts, and quiz challenges.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Aphelion | Interactive Solar System Explorer",
+    description:
+      "Explore planets, discover space facts, and take quizzes in a cinematic solar system experience.",
+  },
   icons: {
     icon: "/aphelion-icon.svg",
   },

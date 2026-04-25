@@ -1,68 +1,117 @@
-# Aphelion
+<h1 align="center">
+  <img src="public/aphelion-icon.svg" width="64" alt="Aphelion">
+  <br>
+  Aphelion
+</h1>
 
-[![Deployed](https://img.shields.io/badge/Deployed-Live-brightgreen)](https://aphelion.website/)
+<p align="center">
+  <b>Journey the solar system.</b><br>
+  A cinematic interactive space experience with scroll-based exploration,<br>
+  orbit view navigation, planet facts, and quiz challenges.
+</p>
 
-**Explore the solar system in a cinematic interactive experience.** Aphelion blends scrolling animation, planet detail cards, and quizzes into a polished space learning adventure.
+<p align="center">
+  <a href="https://aphelion.website"><img src="https://img.shields.io/badge/live-aphelion.website-2563eb?style=for-the-badge" alt="Live website"></a>
+  <img src="https://img.shields.io/badge/version-0.1.0-7c3aed?style=for-the-badge" alt="Version 0.1.0">
+  <img src="https://img.shields.io/badge/license-private-525252?style=for-the-badge" alt="Private">
+</p>
 
-## ✨ What Aphelion Does
+<p align="center">
+  <img src="https://img.shields.io/badge/next.js-14-000000?style=flat-square&logo=nextdotjs&logoColor=white" alt="Next.js 14">
+  <img src="https://img.shields.io/badge/react-18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 18">
+  <img src="https://img.shields.io/badge/typescript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/tailwindcss-3-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS">
+  <img src="https://img.shields.io/badge/framer--motion-latest-ff4d9d?style=flat-square&logo=framer&logoColor=white" alt="Framer Motion">
+  <img src="https://img.shields.io/badge/three.js-0.169-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="three.js">
+</p>
 
-- Guides users through a scroll-driven voyage from the Sun to Pluto
-- Presents a dynamic orbital Solar System view with animated planet motion
-- Surfaces rich planet facts, statistics, and descriptive cards
-- Includes per-planet quiz challenges with instant feedback and score tracking
-- Displays travel progress in a distance HUD based on million kilometers from the Sun
+<p align="center">
+  <a href="#features">Features</a> ·
+  <a href="#tech-stack">Tech stack</a> ·
+  <a href="#project-structure">Project structure</a> ·
+  <a href="#getting-started">Getting started</a> ·
+  <a href="#scripts">Scripts</a>
+</p>
 
-## 🚀 Key Features
+---
 
-- **Launch experience:** Dramatic intro animation that flows into the main journey.
-- **Journey view:** Scroll across ten solar worlds with motion and distance markers.
-- **Solar system view:** Explore planets in orbit and open a dedicated planet detail page.
-- **Planet detail cards:** Read facts, view core stats, and jump into quizzes.
-- **Quiz mode:** Answer questions, get immediate feedback, and review results.
-- **Mission summary:** Completion screen with total worlds visited, distance traveled, and ranking.
+## Features
 
-## 🛠️ Tech Stack
+- **Cinematic intro:** Animated launch sequence into exploration mode.
+- **Journey mode:** Scroll-driven travel from the Sun to Pluto with atmospheric transitions.
+- **Orrery mode:** Solar system orbit map with clickable planets.
+- **Planet detail view:** Planet stats, facts, and focused deep-dive pages.
+- **Quiz system:** Per-planet quiz flow with instant feedback and completion tracking.
+- **Session persistence:** Navigation state and progress persist across refreshes.
+- **Responsive interactions:** Mobile-friendly controls, touch gestures, and layout tuning.
 
-- **Next.js 14** (App Router)
-- **React 18**
-- **Tailwind CSS**
-- **Framer Motion** for smooth animated transitions
-- **Radix UI** for accessible UI building blocks
+---
 
-## 📱 Run Locally
+## Tech stack
 
-1. Install dependencies:
+- **Framework:** Next.js 14 (App Router)
+- **UI:** React 18 + Tailwind CSS + Radix UI primitives
+- **Animation:** Framer Motion
+- **3D / graphics:** three.js + `@react-three/fiber` + `@react-three/drei`
+- **Language:** TypeScript
+
+---
+
+## Project structure
+
+```text
+Aphelion/
+├── app/
+│   ├── page.tsx          # Main experience: intro, journey, orrery, planet details, quiz flow
+│   ├── layout.tsx        # Root layout + global wrappers
+│   └── globals.css       # Global styles
+├── components/
+│   ├── aphelion-logo.tsx # Brand mark/wordmark component
+│   ├── planet-3d.tsx     # 3D planet rendering helpers
+│   ├── tour-view.tsx     # Guided journey presentation
+│   └── ui/               # Reusable UI primitives
+├── hooks/
+│   └── use-mobile.ts     # Mobile breakpoint helper
+└── public/
+    ├── aphelion-icon.svg
+    └── textures/planets/ # Planet texture assets
+```
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 18+
+- npm
+
+### Local development
 
 ```bash
+# 1) Install dependencies
 npm install
-```
 
-2. Start the development server:
-
-```bash
+# 2) Start dev server
 npm run dev
+
+# 3) Open in browser
+# http://localhost:3000
 ```
 
-3. Open the app at:
+---
+
+## Scripts
 
 ```bash
-http://localhost:3000
+npm run dev     # Start development server
+npm run build   # Create production build
+npm run start   # Run production server
+npm run lint    # Run Next.js lint checks
 ```
 
-## ⚙️ Project Structure
+---
 
-- `app/page.tsx` — main interactive experience, planet data, views, and quiz logic
-- `app/layout.tsx` — global layout, fonts, and metadata
-- `components/ui/` — reusable UI components and Radix wrappers
-- `styles/globals.css` — global styling and Tailwind configuration
+## Live site
 
-## 📦 Deployment
-
-Aphelion is deployed live at:
-
-https://aphelion.website/
-
-## 💡 Notes
-
-- Fully client-side experience with no external backend required.
-- Designed for a responsive experience with polished transitions and mobile-friendly presentation.
+[https://aphelion.website](https://aphelion.website)
