@@ -224,17 +224,25 @@ function ClickablePlanet({
 export function TourView({
   planets,
   onSelectPlanet,
+  onFocusPlanet,
+  initialPlanetName,
   completion = {},
 }: {
   planets: TourPlanet[]
   onSelectPlanet: (p: TourPlanet) => void
+  onFocusPlanet?: (planetName: string) => void
+  initialPlanetName?: string | null
   completion?: CompletionMap
 }) {
   const prefersReducedMotion = useReducedMotion()
   const startIdx = useMemo(() => {
+    if (initialPlanetName) {
+      const persisted = planets.findIndex((p) => p.name === initialPlanetName)
+      if (persisted >= 0) return persisted
+    }
     const i = planets.findIndex((p) => p.name === "Earth")
     return i === -1 ? 0 : i
-  }, [planets])
+  }, [initialPlanetName, planets])
 
   const [index, setIndex] = useState(startIdx)
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -281,6 +289,10 @@ export function TourView({
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [showOnboarding])
+
+  useEffect(() => {
+    onFocusPlanet?.(current.name)
+  }, [current.name, onFocusPlanet])
 
   const positions = useMemo(() => planets.map((p) => positionFor(p.name)), [planets])
   const scales = useMemo(() => planets.map((p) => scaleFor(p.name)), [planets])
@@ -394,7 +406,7 @@ export function TourView({
       </div>
 
       {/* Get Started CTA */}
-      <div className="absolute bottom-24 right-4 z-30 sm:bottom-28 sm:right-10">
+      <div className="absolute bottom-[9.75rem] right-4 z-30 sm:bottom-28 sm:right-10">
         <button
           onClick={() => {
             triggerHaptic([8, 12, 8])

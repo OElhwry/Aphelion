@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback, type WheelEvent } from "react"
+import { useEffect, useRef, useState, useCallback, type TouchEvent, type WheelEvent } from "react"
 import { motion, useScroll, useTransform, AnimatePresence, useInView, useReducedMotion } from "framer-motion"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { TourView } from "@/components/tour-view"
@@ -55,6 +55,7 @@ interface PersistedNavState {
   view: View
   exploreMode: "journey" | "orrery"
   selectedPlanetName: string | null
+  focusedPlanetName?: string | null
 }
 
 function readPersistedNavState(): PersistedNavState | null {
@@ -851,6 +852,7 @@ function IntroScreen({
 }) {
   const [entering, setEntering] = useState(false)
   const scrollIntent = useRef(0)
+  const touchStartY = useRef<number | null>(null)
   const prefersReducedMotion = useReducedMotion()
 
   const startJourney = useCallback(() => {
@@ -867,8 +869,28 @@ function IntroScreen({
     if (scrollIntent.current > 140) startJourney()
   }, [entering, startJourney])
 
+  const handleTouchStart = useCallback((e: TouchEvent<HTMLDivElement>) => {
+    if (entering) return
+    touchStartY.current = e.changedTouches[0]?.clientY ?? null
+  }, [entering])
+
+  const handleTouchEnd = useCallback((e: TouchEvent<HTMLDivElement>) => {
+    if (entering) return
+    if (touchStartY.current === null) return
+    const endY = e.changedTouches[0]?.clientY ?? touchStartY.current
+    const deltaY = endY - touchStartY.current
+    // Accept deliberate vertical swipes in either direction for mobile onboarding.
+    if (Math.abs(deltaY) > 70) startJourney()
+    touchStartY.current = null
+  }, [entering, startJourney])
+
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#030710] text-white" onWheel={handleWheelEnter}>
+    <div
+      className="fixed inset-0 overflow-hidden bg-[#030710] text-white"
+      onWheel={handleWheelEnter}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Deep space background + vignette */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(20,56,110,0.28)_0%,rgba(3,7,16,0.96)_55%,#02050b_100%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(35,81,162,0.22)_0%,transparent_52%)]" />
@@ -947,7 +969,7 @@ function IntroScreen({
         </motion.button>
 
         <div className="mt-5 text-[10px] uppercase tracking-[0.28em] text-white/45">
-          or scroll down to begin
+          or scroll / swipe to begin
         </div>
 
         {resumeLabel && onResume && (
@@ -1483,6 +1505,7 @@ const ORRERY_CONFIG = [
 function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) => void }) {
   const [scale, setScale] = useState(1)
   const [hoveredOrbit, setHoveredOrbit] = useState<string | null>(null)
+  const previewPlanetName = hoveredOrbit ?? "Earth"
 
   useEffect(() => {
     const update = () => {
@@ -1502,6 +1525,24 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
       {/* Wordmark — matches TourView aesthetic */}
       <div className="absolute left-6 top-5 z-30 sm:left-10 sm:top-6">
         <AphelionLogo wordmarkClassName="text-[12px] tracking-[0.32em]" iconClassName="h-6 w-6" />
+      </div>
+
+      {/* Textured preview card so solar-system mode also uses the modern planet model */}
+      <div className="absolute right-4 top-20 z-30 hidden w-40 rounded-xl border border-white/10 bg-black/45 p-2.5 backdrop-blur-sm md:block">
+        <div className="h-28 overflow-hidden rounded-lg border border-white/10 bg-black/40">
+          <Planet3D
+            name={previewPlanetName}
+            showStars={false}
+            enableControls={false}
+            enableZoom={false}
+            autoRotate
+            rotationSpeed={0.07}
+            cameraZ={previewPlanetName === "Saturn" ? 4.6 : 3}
+          />
+        </div>
+        <div className="mt-2 text-center text-[9px] tracking-[0.25em] text-white/70">
+          {previewPlanetName.toUpperCase()}
+        </div>
       </div>
 
       {/* Background stars */}
@@ -2284,6 +2325,7 @@ export default function SpaceExploration() {
   const [view, setView] = useState<View>("intro")
   const [exploreMode, setExploreMode] = useState<ExploreMode>("journey")
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetData | null>(null)
+  const [focusedPlanetName, setFocusedPlanetName] = useState<string | null>(null)
   const [detailTab, setDetailTab] = useState<DetailTab>("info")
   const [planetProgress, setPlanetProgress] = useState<PlanetProgress>({})
   const [resumeLabel, setResumeLabel] = useState<string | null>(null)
@@ -2295,6 +2337,7 @@ export default function SpaceExploration() {
   const handleSelectPlanet = useCallback((p: PlanetData) => {
     triggerHaptic([8, 12, 8])
     setDetailTab("info")
+    setFocusedPlanetName(p.name)
     setSelectedPlanet(p)
     setView("planet")
   }, [])
@@ -2316,6 +2359,7 @@ export default function SpaceExploration() {
     if (persisted) {
       setView(persisted.view)
       setExploreMode(persisted.exploreMode)
+      setFocusedPlanetName(persisted.focusedPlanetName ?? null)
       if (persisted.selectedPlanetName) {
         setSelectedPlanet(PLANETS.find((p) => p.name === persisted.selectedPlanetName) ?? null)
       }
@@ -2348,9 +2392,10 @@ export default function SpaceExploration() {
       view,
       exploreMode,
       selectedPlanetName: selectedPlanet?.name ?? null,
+      focusedPlanetName,
     }
     window.sessionStorage.setItem(NAV_STATE_KEY, JSON.stringify(state))
-  }, [navStateReady, view, exploreMode, selectedPlanet])
+  }, [navStateReady, view, exploreMode, selectedPlanet, focusedPlanetName])
 
   useEffect(() => {
     if (!navStateReady) return
@@ -2407,6 +2452,8 @@ export default function SpaceExploration() {
                   <TourView
                     planets={PLANETS}
                     onSelectPlanet={(p) => handleSelectPlanet(p as PlanetData)}
+                    onFocusPlanet={setFocusedPlanetName}
+                    initialPlanetName={focusedPlanetName ?? resumeState?.focusedPlanetName ?? selectedPlanet?.name ?? null}
                     completion={planetProgress}
                   />
                 </motion.div>
