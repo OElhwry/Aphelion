@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Orbitron } from "next/font/google"
+import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
 const orbitron = Orbitron({
@@ -57,6 +58,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${orbitron.variable} font-orbitron overflow-x-hidden`}>
         {children}
+        <Analytics />
       </body>
     </html>
   )
