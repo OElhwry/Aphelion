@@ -25,6 +25,30 @@ function getDetailStatIcon(label: string): LucideIcon {
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type View = "intro" | "journey" | "planet"
+type DetailTab = "info" | "quiz"
+
+const NAV_STATE_KEY = "aphelion.nav-state"
+
+interface PersistedNavState {
+  view: View
+  exploreMode: "journey" | "orrery"
+  selectedPlanetName: string | null
+}
+
+function readPersistedNavState(): PersistedNavState | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = window.sessionStorage.getItem(NAV_STATE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as PersistedNavState
+    const viewOk = parsed.view === "intro" || parsed.view === "journey" || parsed.view === "planet"
+    const modeOk = parsed.exploreMode === "journey" || parsed.exploreMode === "orrery"
+    if (!viewOk || !modeOk) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
 
 interface PlanetStat { label: string; value: string }
 interface QuizQuestion {
@@ -1943,13 +1967,33 @@ function PlanetDetailView({
   onClose,
   mode,
   onModeChange,
+  initialTab = "info",
+  onTabChange,
 }: {
   planet: PlanetData
   onClose: () => void
   mode: "journey" | "orrery"
   onModeChange: (m: "journey" | "orrery") => void
+  initialTab?: DetailTab
+  onTabChange?: (tab: DetailTab) => void
 }) {
-  const [tab, setTab] = useState<"info" | "quiz">("info")
+  const [tab, setTab] = useState<DetailTab>(initialTab)
+
+  useEffect(() => {
+    setTab(initialTab)
+  }, [initialTab, planet.name])
+
+  useEffect(() => {
+    onTabChange?.(tab)
+  }, [onTabChange, tab])
+
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [])
 
   const subtitle =
     planet.distanceFromSun === 0
@@ -1958,7 +2002,7 @@ function PlanetDetailView({
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 overflow-y-auto"
+      className="fixed inset-0 z-50 overflow-y-scroll [scrollbar-gutter:stable]"
       style={{ background: "#05070d", color: "white" }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -2014,18 +2058,18 @@ function PlanetDetailView({
           {/* 3D Planet */}
           <motion.div
             className="relative h-[300px] w-full sm:h-[420px] lg:h-[520px]"
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           >
             <Planet3D
               name={planet.name}
               showStars={false}
-              enableControls
+              enableControls={false}
               enableZoom={false}
               autoRotate
               rotationSpeed={0.06}
-              cameraZ={planet.name === "Saturn" ? 4.2 : 3.4}
+              cameraZ={planet.name === "Saturn" ? 5.2 : 3.4}
             />
           </motion.div>
 
@@ -2177,10 +2221,13 @@ export default function SpaceExploration() {
   const [view, setView] = useState<View>("intro")
   const [exploreMode, setExploreMode] = useState<ExploreMode>("journey")
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetData | null>(null)
+  const [detailTab, setDetailTab] = useState<DetailTab>("info")
+  const [navStateReady, setNavStateReady] = useState(false)
 
   const handleEnter = useCallback(() => setView("journey"), [])
 
   const handleSelectPlanet = useCallback((p: PlanetData) => {
+    setDetailTab("info")
     setSelectedPlanet(p)
     setView("planet")
   }, [])
@@ -2195,6 +2242,37 @@ export default function SpaceExploration() {
     if (m === "journey") window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior })
     setExploreMode(m)
   }, [])
+
+  useEffect(() => {
+    const persisted = readPersistedNavState()
+    if (persisted) {
+      setView(persisted.view)
+      setExploreMode(persisted.exploreMode)
+      if (persisted.selectedPlanetName) {
+        setSelectedPlanet(PLANETS.find((p) => p.name === persisted.selectedPlanetName) ?? null)
+      }
+    }
+    const savedTab = window.sessionStorage.getItem("aphelion.detail-tab")
+    if (savedTab === "quiz") setDetailTab("quiz")
+    setNavStateReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!navStateReady) return
+    if (typeof window === "undefined") return
+    const state: PersistedNavState = {
+      view,
+      exploreMode,
+      selectedPlanetName: selectedPlanet?.name ?? null,
+    }
+    window.sessionStorage.setItem(NAV_STATE_KEY, JSON.stringify(state))
+  }, [navStateReady, view, exploreMode, selectedPlanet])
+
+  useEffect(() => {
+    if (!navStateReady) return
+    if (typeof window === "undefined") return
+    window.sessionStorage.setItem("aphelion.detail-tab", detailTab)
+  }, [navStateReady, detailTab])
 
   return (
     <>
@@ -2237,6 +2315,8 @@ export default function SpaceExploration() {
             planet={selectedPlanet}
             onClose={handleClosePlanet}
             mode={exploreMode}
+            initialTab={detailTab}
+            onTabChange={setDetailTab}
             onModeChange={(m) => {
               setExploreMode(m)
               setView("journey")
