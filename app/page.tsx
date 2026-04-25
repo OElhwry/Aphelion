@@ -1506,7 +1506,8 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
   const [scale, setScale] = useState(1)
   const [hoveredOrbit, setHoveredOrbit] = useState<string | null>(null)
   const [elapsed, setElapsed] = useState(0)
-  const previewPlanetName = hoveredOrbit ?? "Earth"
+  const [lastHoveredPlanet, setLastHoveredPlanet] = useState("Earth")
+  const previewPlanetName = hoveredOrbit && hoveredOrbit !== "Sun" ? hoveredOrbit : lastHoveredPlanet
   const starField = useRef(
     Array.from({ length: 260 }, (_, i) => ({
       id: i,
@@ -1538,6 +1539,12 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
     raf = window.requestAnimationFrame(tick)
     return () => window.cancelAnimationFrame(raf)
   }, [])
+
+  useEffect(() => {
+    if (hoveredOrbit && hoveredOrbit !== "Sun") {
+      setLastHoveredPlanet(hoveredOrbit)
+    }
+  }, [hoveredOrbit])
 
   return (
     <div className="fixed inset-0 flex items-center justify-center overflow-hidden"
@@ -1637,7 +1644,7 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
             const angle = ((cfg.startAngle - 90) * Math.PI) / 180 + (elapsed * Math.PI * 2) / cfg.period
             const x = 450 + cfg.orbitR * Math.cos(angle)
             const y = 450 + cfg.orbitR * Math.sin(angle)
-            const size = Math.max(cfg.pxSize, 7)
+            const size = Math.max(cfg.pxSize * 1.75, 7)
             return (
               <button
                 key={`planet-${cfg.name}`}
