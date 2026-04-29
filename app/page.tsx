@@ -890,6 +890,7 @@ function IntroScreen({
       onWheel={handleWheelEnter}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      style={{ touchAction: "none" }}
     >
       {/* Deep space background + vignette */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(20,56,110,0.28)_0%,rgba(3,7,16,0.96)_55%,#02050b_100%)]" />
@@ -898,6 +899,7 @@ function IntroScreen({
       {/* Earth scene; starts as "above Earth" and descends on enter */}
       <motion.div
         className="absolute inset-0"
+        style={{ willChange: "transform" }}
         animate={entering ? (prefersReducedMotion ? { opacity: 1 } : { scale: 1.46, y: -180 }) : { scale: 1, y: 0 }}
         transition={{ duration: prefersReducedMotion ? 0.2 : 1.7, ease: [0.22, 1, 0.36, 1] }}
       >
@@ -1804,6 +1806,7 @@ function Quiz({
   const percent = Math.round(((current + 1) / questions.length) * 100)
 
   const handleSelect = (i: number) => {
+    if (answers[current] !== null) return
     const newAnswers = [...answers]
     newAnswers[current] = i
     setAnswers(newAnswers)
@@ -1818,11 +1821,6 @@ function Quiz({
       setDone(true)
       onQuizComplete?.()
     }
-  }
-
-  const handlePrev = () => {
-    triggerHaptic(8)
-    if (current > 0) setCurrent((c) => c - 1)
   }
 
   const handleRestart = () => {
@@ -1972,6 +1970,7 @@ function Quiz({
                     color: textColor,
                   }}
                   onClick={() => handleSelect(i)}
+                  disabled={answered}
                   role="radio"
                   aria-checked={selected === i}
                   aria-label={`Option ${String.fromCharCode(65 + i)}: ${opt}`}
@@ -2021,16 +2020,6 @@ function Quiz({
           </AnimatePresence>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {current > 0 && (
-              <button
-                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 px-4 text-[11px] tracking-[0.2em] text-white/85 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80"
-                onClick={handlePrev}
-                aria-label="Go to previous question"
-              >
-                <span aria-hidden>←</span>
-                PREVIOUS
-              </button>
-            )}
             {answered && (
               <motion.button
                 className="group inline-flex min-h-11 items-center gap-3 rounded-full border border-white/15 px-4 text-[11px] tracking-[0.28em] text-white/90 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 sm:tracking-[0.32em]"

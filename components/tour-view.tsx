@@ -338,7 +338,11 @@ export function TourView({
                 scale={scales[i]}
                 onClick={() => {
                   triggerHaptic([8, 12, 8])
-                  onSelectPlanet(p)
+                  if (i === index) {
+                    onSelectPlanet(p)
+                  } else {
+                    setIndex(i)
+                  }
                 }}
               />
             ))}
