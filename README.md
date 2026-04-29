@@ -1,5 +1,7 @@
 <h1 align="center">
+  <a href="https://aphelion.website">
   <img src="public\og-image.png" width="800" alt="Aphelion">
+  </a>
   <br>
   Aphelion
 </h1>
