@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="public/aphelion-icon.svg" width="64" alt="Aphelion">
+  <img src="public\og-image.png" width="800" alt="Aphelion">
   <br>
   Aphelion
 </h1>
