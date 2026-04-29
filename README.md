@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://aphelion.website"><img src="https://img.shields.io/badge/live-aphelion.website-2563eb?style=for-the-badge" alt="Live website"></a>
-  <a href="https://github.com/OElhwry/Aphelion/releases/tag/v1.0.1"><img src="https://img.shields.io/badge/version-1.0.2-7c3aed?style=for-the-badge" alt="Version 1.0.2"></a>
+  <a href="https://github.com/OElhwry/Aphelion/releases/tag/v1.0.2"><img src="https://img.shields.io/badge/version-1.0.2-7c3aed?style=for-the-badge" alt="Version 1.0.2"></a>
   <img src="https://img.shields.io/badge/license-private-525252?style=for-the-badge" alt="Private">
 </p>
 
