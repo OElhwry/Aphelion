@@ -13,40 +13,131 @@ const orbitron = Orbitron({
 export const metadata: Metadata = {
   metadataBase: new URL("https://aphelion.website"),
   title: {
-    default: "Aphelion | Interactive Solar System Explorer",
+    default: "Aphelion | Solar System Explorer",
     template: "%s | Aphelion",
   },
   description:
-    "Explore the solar system in an interactive 3D-inspired experience. Learn planet facts, compare stats, and test your knowledge with quizzes from Mercury to Pluto.",
+    "An interactive 3D journey through the solar system. Explore planets, discover space facts, and test your knowledge with quizzes, from the Sun to Pluto.",
   keywords: [
-    "solar system",
+    "Aphelion",
+    "solar system explorer",
+    "interactive solar system",
     "planets",
     "space education",
     "astronomy",
-    "interactive learning",
     "planet quiz",
-    "Aphelion",
+    "3D space",
+    "solar system",
+    "space facts",
+    "Mercury",
+    "Venus",
+    "Earth",
+    "Mars",
+    "Jupiter",
+    "Saturn",
+    "Uranus",
+    "Neptune",
+    "Pluto",
   ],
+  authors: [{ name: "Aphelion", url: "https://aphelion.website" }],
+  creator: "Aphelion",
+  publisher: "Aphelion",
   alternates: {
-    canonical: "/",
+    canonical: "https://aphelion.website",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
   openGraph: {
     type: "website",
     url: "https://aphelion.website",
     siteName: "Aphelion",
-    title: "Aphelion | Interactive Solar System Explorer",
+    title: "Aphelion | Solar System Explorer",
     description:
-      "Journey from the Sun to Pluto with immersive visuals, planet facts, and quiz challenges.",
+      "An interactive 3D journey through the solar system. Explore planets, discover space facts, and test your knowledge with quizzes.",
+    locale: "en_US",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Aphelion — Solar System Explorer",
+        type: "image/png",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Aphelion | Interactive Solar System Explorer",
+    title: "Aphelion | Solar System Explorer",
     description:
-      "Explore planets, discover space facts, and take quizzes in a cinematic solar system experience.",
+      "Explore the solar system in 3D — discover planets, space facts, and quiz challenges from the Sun to Pluto.",
+    images: ["/opengraph-image.png"],
   },
   icons: {
-    icon: "/aphelion-icon.svg",
+    icon: [
+      { url: "/icon.png", type: "image/png", sizes: "64x64" },
+      { url: "/aphelion-icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/icon.png",
   },
+  manifest: "/manifest.webmanifest",
+  category: "education",
+  other: {
+    "theme-color": "#05070d",
+  },
+}
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://aphelion.website/#website",
+      name: "Aphelion",
+      url: "https://aphelion.website",
+      description:
+        "An interactive 3D journey through the solar system. Explore planets, discover space facts, and test your knowledge.",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: "https://aphelion.website",
+      },
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://aphelion.website/#webapp",
+      name: "Aphelion | Solar System Explorer",
+      url: "https://aphelion.website",
+      description:
+        "An interactive 3D journey through the solar system. Explore planets, discover space facts, and test your knowledge with quizzes — from the Sun to Pluto.",
+      applicationCategory: "EducationApplication",
+      operatingSystem: "Web",
+      inLanguage: "en",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+      },
+      author: {
+        "@type": "Organization",
+        name: "Aphelion",
+        url: "https://aphelion.website",
+      },
+      about: {
+        "@type": "Thing",
+        name: "Solar System",
+        description: "The collection of planets and other objects orbiting the Sun.",
+      },
+    },
+  ],
 }
 
 export default function RootLayout({
@@ -56,6 +147,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className={`${orbitron.variable} font-orbitron overflow-x-hidden`}>
         {children}
         <Analytics />
