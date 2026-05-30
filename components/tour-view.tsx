@@ -6,7 +6,7 @@ import { CameraControls, Stars } from "@react-three/drei"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import { Ruler, Clock, Compass, ArrowDown, Thermometer, Moon, Weight, Calendar, Star, MousePointer2, RotateCcw, Sparkles } from "lucide-react"
 import * as THREE from "three"
-import { PlanetMesh, type PlanetKey } from "@/components/planet-3d"
+import { PlanetMesh, MilkyWaySkybox, type PlanetKey } from "@/components/planet-3d"
 import { AphelionLogo } from "@/components/aphelion-logo"
 import { cn } from "@/lib/utils"
 
@@ -25,36 +25,55 @@ const SERIF = "'Playfair Display', 'Cormorant Garamond', 'Times New Roman', seri
 
 // Per-planet 3D positions — varied across X (progression), Y (height), Z (depth)
 // so flying between them feels like traversing real space, not sliding sideways.
+// Base layout (before SPACING_BOOST). X advances along the journey; Y/Z weave up
+// and down / near and far so flying between worlds feels like real 3D travel.
 const PLANET_POSITIONS: Record<string, [number, number, number]> = {
-  Sun:     [0,   0,    0],
-  Mercury: [16,  1.5, -2],
-  Venus:   [32, -2,    3],
-  Earth:   [48,  1.8, -1.5],
-  Mars:    [64, -1.2,  4],
-  Jupiter: [82,  2.5, -3],
-  Saturn:  [100, -2.5, 2.5],
-  Uranus:  [116, 1.8, -4],
-  Neptune: [132, -1.5, 3.5],
-  Pluto:   [146, 0.5, -2.5],
+  Sun:     [0,    0,    0],
+  Mercury: [18,   5,   -6],
+  Venus:   [36,  -6,    7],
+  Earth:   [54,   7,   -4],
+  Mars:    [72,  -5,    8],
+  Jupiter: [94,   8,   -7],
+  Saturn:  [116, -7,    6],
+  Uranus:  [136,  6,   -8],
+  Neptune: [156, -6,    7],
+  Pluto:   [176,  4,   -5],
 }
 
-// Real-ish proportions, compressed so distant planets stay visible
+// True size ratios from real equatorial diameters, normalised to Earth = 1.0
+// (Earth 12,742 km). Sun 1,392,700 · Jupiter 142,984 · Saturn 120,536 ·
+// Uranus 51,118 · Neptune 49,528 · Venus 12,104 · Mars 6,779 · Mercury 4,879 ·
+// Pluto 2,377 km. The Sun is genuinely ~109× Earth — focus framing keeps every
+// body screen-filling when clicked, so the real scale only shows across the view.
 const REAL_SCALE: Record<string, number> = {
-  Sun: 2.6,
-  Mercury: 0.35,
-  Venus: 0.82,
-  Earth: 0.88,
-  Mars: 0.48,
-  Jupiter: 1.9,
-  Saturn: 1.65,
-  Uranus: 1.1,
-  Neptune: 1.05,
-  Pluto: 0.18,
+  Sun: 109.3,
+  Mercury: 0.383,
+  Venus: 0.95,
+  Earth: 1.0,
+  Mars: 0.532,
+  Jupiter: 11.22,
+  Saturn: 9.46,
+  Uranus: 4.012,
+  Neptune: 3.887,
+  Pluto: 0.187,
 }
 
-const camDistance = (scale: number) => scale * 3.4 + 1.0
-const positionFor = (name: string): [number, number, number] => PLANET_POSITIONS[name] ?? [0, 0, 0]
-const scaleFor = (name: string) => REAL_SCALE[name] ?? 1
+// Make every planet bigger by the same factor (true ratios preserved) and spread
+// the system out a bit more than that, so the larger bodies don't crowd each
+// other while flying between them.
+// Overall world scale (true ratios are in REAL_SCALE). Spacing is wide enough that
+// the now-massive Sun doesn't swallow the inner planets.
+const SIZE_BOOST = 1.8
+const SPACING_BOOST = 13.0
+
+// Focus distance is proportional to size, so clicking any planet fits it to the
+// screen the same way. Slightly zoomed-out comfy fit (~75% height).
+const camDistance = (scale: number) => scale * 3.3
+const positionFor = (name: string): [number, number, number] => {
+  const p = PLANET_POSITIONS[name] ?? [0, 0, 0]
+  return [p[0] * SPACING_BOOST, p[1] * SPACING_BOOST, p[2] * SPACING_BOOST]
+}
+const scaleFor = (name: string) => (REAL_SCALE[name] ?? 1) * SIZE_BOOST
 
 function triggerHaptic(pattern: number | number[] = 10) {
   if (typeof window === "undefined") return
@@ -109,6 +128,12 @@ function CinematicCameraRig({
     const targetPos = positions[planetIndex]
     const targetScale = scales[planetIndex]
     const dist = camDistance(targetScale)
+
+    // Cap manual zoom just outside the planet's surface so you can't fly inside it
+    // (which would just show the inside-out texture / blank). Allow zooming out far
+    // enough to take in the whole system.
+    ctrl.minDistance = targetScale * 1.2
+    ctrl.maxDistance = 3000
 
     const camEndX = targetPos[0]
     const camEndY = targetPos[1]
@@ -183,7 +208,7 @@ function CinematicCameraRig({
     }
   })
 
-  return <CameraControls ref={ref} minDistance={1.5} maxDistance={25} smoothTime={0.4} truckSpeed={0} />
+  return <CameraControls ref={ref} minDistance={0.3} maxDistance={3000} smoothTime={0.4} truckSpeed={0} />
 }
 
 function ClickablePlanet({
@@ -319,15 +344,21 @@ export function TourView({
 
       {/* 3D Canvas */}
       <div className="absolute inset-0 z-0">
-        <Canvas camera={{ position: initialCam, fov: 45 }} dpr={[1, 2]}>
+        <Canvas camera={{ position: initialCam, fov: 45, near: 0.05, far: 5000 }} dpr={[1, 2]}>
           <ambientLight intensity={0.1} />
           <directionalLight position={[10, 5, 10]} intensity={1.4} color="#ffffff" />
           {/* Sun's local point light */}
-          <pointLight position={positionFor("Sun")} intensity={2.5} color="#ffaa44" distance={50} decay={1.5} />
+          <pointLight position={positionFor("Sun")} intensity={3} color="#ffaa44" distance={500} decay={1.2} />
+
+          {/* Textured galaxy band behind the procedural stars */}
+          <Suspense fallback={null}>
+            <MilkyWaySkybox radius={1200} />
+          </Suspense>
 
           {/* Layered starfield: distant haze + crisp foreground for depth */}
-          <Stars radius={400} depth={120} count={9000} factor={2.2} saturation={0} fade speed={0.15} />
-          <Stars radius={180} depth={60} count={2200} factor={4.5} saturation={0} fade speed={0.4} />
+          {/* Temporarily disabled to preview the Milky Way skybox on its own */}
+          {/* <Stars radius={400} depth={120} count={9000} factor={2.2} saturation={0} fade speed={0.15} /> */}
+          {/* <Stars radius={180} depth={60} count={2200} factor={4.5} saturation={0} fade speed={0.4} /> */}
 
           <Suspense fallback={null}>
             {planets.map((p, i) => (

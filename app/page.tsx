@@ -5,6 +5,8 @@ import { motion, useScroll, useTransform, AnimatePresence, useInView, useReduced
 import { useIsMobile } from "@/hooks/use-mobile"
 import { TourView } from "@/components/tour-view"
 import { Planet3D } from "@/components/planet-3d"
+import { StarfieldBackground } from "@/components/starfield-background"
+import { PeopleInSpace } from "@/components/people-in-space"
 import { AphelionLogo } from "@/components/aphelion-logo"
 import { Ruler, Clock, Compass, ArrowDown, Thermometer, Moon as MoonIcon, Weight, Calendar, Star as StarIcon, type LucideIcon } from "lucide-react"
 
@@ -905,7 +907,7 @@ function IntroScreen({
       >
         <Planet3D
           name="earth"
-          showStars
+          showMilkyWay
           enableControls={false}
           enableZoom={false}
           autoRotate
@@ -973,6 +975,8 @@ function IntroScreen({
         <div className="mt-5 text-[10px] uppercase tracking-[0.28em] text-white/45">
           or scroll / swipe to begin
         </div>
+
+        <PeopleInSpace className="mt-6" />
 
         {resumeLabel && onResume && (
           <button
@@ -1551,6 +1555,9 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
   return (
     <div className="fixed inset-0 flex items-center justify-center overflow-hidden"
       style={{ background: "#05070d", paddingTop: 72 }}>
+
+      {/* Textured galaxy backdrop behind the orbits */}
+      <StarfieldBackground position="absolute" className="z-0" showStars={false} />
 
       {/* Wordmark — matches TourView aesthetic */}
       <div className="absolute left-6 top-5 z-30 sm:left-10 sm:top-6">
