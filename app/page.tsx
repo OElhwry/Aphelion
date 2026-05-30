@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback, type TouchEvent, type WheelEvent } from "react"
+import { useEffect, useRef, useState, useCallback, useMemo, type TouchEvent, type WheelEvent } from "react"
 import { motion, useScroll, useTransform, AnimatePresence, useInView, useReducedMotion } from "framer-motion"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { TourView } from "@/components/tour-view"
@@ -126,13 +126,13 @@ const PLANETS: PlanetData[] = [
     quiz: [
       {
         question: "How long does sunlight take to reach Earth?",
-        options: ["8 seconds", "8 minutes 20 seconds", "80 minutes", "8 hours"],
+        options: ["50 seconds", "8 minutes 20 seconds", "19 minutes 40 seconds", "1 hour 5 minutes"],
         correct: 1,
         explanation: "Light travels at 300,000 km/s — the 150 million km gap takes about 8 min 20 s.",
       },
       {
         question: "What percentage of the solar system's mass does the Sun hold?",
-        options: ["75%", "90%", "99.86%", "95%"],
+        options: ["95.2%", "98.4%", "99.86%", "99.4%"],
         correct: 2,
         explanation: "At 99.86%, virtually all of the solar system's mass is in the Sun.",
       },
@@ -250,8 +250,8 @@ const PLANETS: PlanetData[] = [
       },
       {
         question: "How does Venus's atmospheric pressure compare to Earth's?",
-        options: ["Same", "10× higher", "50× higher", "92× higher"],
-        correct: 3,
+        options: ["35× higher", "60× higher", "92× higher", "120× higher"],
+        correct: 2,
         explanation: "Standing on Venus would feel like being 900 m underwater on Earth.",
       },
       {
@@ -312,7 +312,7 @@ const PLANETS: PlanetData[] = [
       },
       {
         question: "What is Earth's average surface temperature?",
-        options: ["-30 °C", "0 °C", "+15 °C", "+50 °C"],
+        options: ["-20 °C", "0 °C", "15 °C", "40 °C"],
         correct: 2,
         explanation: "Earth's global average temperature is about +15 °C, maintained by the greenhouse effect.",
       },
@@ -368,13 +368,13 @@ const PLANETS: PlanetData[] = [
       },
       {
         question: "How long is a Martian day (sol)?",
-        options: ["12 hours", "24 hours exactly", "24 hours 37 minutes", "48 hours"],
+        options: ["23 hours 56 minutes", "24 hours exactly", "24 hours 37 minutes", "25 hours 20 minutes"],
         correct: 2,
         explanation: "A sol is 24 hours and 37 minutes — making Mars have the most Earth-like day in the solar system.",
       },
       {
         question: "What is Valles Marineris?",
-        options: ["A volcano", "A polar ice cap", "The solar system's longest canyon", "A Martian sea"],
+        options: ["A giant volcano", "A polar ice cap", "A vast canyon system", "A dried-up seabed"],
         correct: 2,
         explanation: "Valles Marineris stretches 4,000 km — ten times longer than the Grand Canyon.",
       },
@@ -406,14 +406,14 @@ const PLANETS: PlanetData[] = [
     quiz: [
       {
         question: "What is the Great Red Spot on Jupiter?",
-        options: ["A volcano", "A continent", "A storm that has lasted 350+ years", "A moon"],
+        options: ["An ancient volcano", "A continent of ice", "A giant raging storm", "A captured asteroid"],
         correct: 2,
         explanation: "The Great Red Spot is an enormous anticyclonic storm, larger than Earth, raging for centuries.",
       },
       {
         question: "How many moons does Jupiter have?",
-        options: ["4", "27", "60", "95+"],
-        correct: 3,
+        options: ["79", "88", "95", "112"],
+        correct: 2,
         explanation: "Jupiter has over 95 confirmed moons, including the four large Galilean moons.",
       },
       {
@@ -462,13 +462,13 @@ const PLANETS: PlanetData[] = [
     quiz: [
       {
         question: "What are Saturn's rings primarily made of?",
-        options: ["Gas and dust", "Ice and rock particles", "Molten lava", "Metal"],
+        options: ["Frozen methane gas", "Ice and rock particles", "Compressed dust clouds", "Iron and nickel"],
         correct: 1,
         explanation: "Saturn's rings are composed of billions of pieces of ice and rock, ranging from dust-sized to metres across.",
       },
       {
         question: "Which property makes Saturn unique among all planets?",
-        options: ["It has rings", "It would float on water", "It has the most moons", "It's the coldest planet"],
+        options: ["It spins the fastest", "It would float on water", "It has no moons", "It is the hottest planet"],
         correct: 1,
         explanation: "Saturn's average density is 0.687 g/cm³ — lower than water (1 g/cm³), meaning it would float.",
       },
@@ -486,8 +486,8 @@ const PLANETS: PlanetData[] = [
       },
       {
         question: "How many confirmed moons does Saturn have?",
-        options: ["27", "79", "95", "146+"],
-        correct: 3,
+        options: ["98", "120", "146", "168"],
+        correct: 2,
         explanation: "Saturn has the most moons of any planet — over 146 confirmed as of recent surveys.",
       },
     ],
@@ -518,7 +518,7 @@ const PLANETS: PlanetData[] = [
     quiz: [
       {
         question: "What is unusual about Uranus's rotation?",
-        options: ["It doesn't rotate", "It rotates on its side (98° tilt)", "It rotates backwards", "It rotates very slowly"],
+        options: ["It never rotates", "It rotates on its side", "It rotates backwards", "It rotates very slowly"],
         correct: 1,
         explanation: "Uranus's axial tilt of 98° means it essentially rolls around the Sun on its side.",
       },
@@ -530,7 +530,7 @@ const PLANETS: PlanetData[] = [
       },
       {
         question: "How long does one season last on Uranus?",
-        options: ["3 months", "1 year", "20+ years", "84 years"],
+        options: ["About 3 months", "Roughly 7 years", "Around 21 years", "A full 84 years"],
         correct: 2,
         explanation: "Because Uranus's year is 84 Earth years and its tilt is extreme, each season lasts over 20 years.",
       },
@@ -542,7 +542,7 @@ const PLANETS: PlanetData[] = [
       },
       {
         question: "How many moons does Uranus have?",
-        options: ["2", "14", "27+", "95+"],
+        options: ["14", "21", "27", "31"],
         correct: 2,
         explanation: "Uranus has 27 known moons, all named after characters from Shakespeare and Alexander Pope.",
       },
@@ -1574,7 +1574,7 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
             enableZoom={false}
             autoRotate
             rotationSpeed={0.07}
-            cameraZ={previewPlanetName === "Saturn" ? 4.6 : 3}
+            cameraZ={({ Saturn: 5, Uranus: 4.4, Neptune: 4, Jupiter: 3.7 } as Record<string, number>)[previewPlanetName] ?? 3}
           />
         </div>
         <div className="mt-2 text-center text-[9px] tracking-[0.25em] text-white/70">
@@ -1676,9 +1676,9 @@ function SolarSystemView({ onSelectPlanet }: { onSelectPlanet: (p: PlanetData) =
           })}
         </div>
 
-        {/* Planet labels — fixed position on the orbital ring at start angle */}
+        {/* Planet labels — ride along just outside each moving planet */}
         {ORRERY_CONFIG.map((cfg) => {
-          const angleRad = ((cfg.startAngle - 90) * Math.PI) / 180
+          const angleRad = ((cfg.startAngle - 90) * Math.PI) / 180 + (elapsed * Math.PI * 2) / cfg.period
           // Place label slightly outside the orbit
           const labelR = cfg.orbitR + 14
           const lx = 450 + labelR * Math.cos(angleRad)
@@ -1768,8 +1768,44 @@ function ViewToggle({ mode, onChange }: { mode: "journey" | "orrery"; onChange: 
 
 // ─── Quiz Component ───────────────────────────────────────────────────────────
 
+// Deterministic option shuffling so the correct answer isn't clustered at the
+// same letter. Seeded by quizKey + question so it's stable across reloads (keeps
+// saved progress valid) but well spread across A/B/C/D.
+function hashString(s: string): number {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+function mulberry32(seed: number) {
+  let a = seed
+  return () => {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+function shuffleQuizQuestions(questions: QuizQuestion[], seedKey: string): QuizQuestion[] {
+  return questions.map((q, qi) => {
+    const rand = mulberry32(hashString(`${seedKey}#${qi}#${q.question}`))
+    const order = q.options.map((_, i) => i)
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1))
+      ;[order[i], order[j]] = [order[j], order[i]]
+    }
+    return {
+      ...q,
+      options: order.map((idx) => q.options[idx]),
+      correct: order.indexOf(q.correct),
+    }
+  })
+}
+
 function Quiz({
-  questions,
+  questions: rawQuestions,
   quizKey,
   onQuizComplete,
 }: {
@@ -1777,6 +1813,7 @@ function Quiz({
   quizKey: string
   onQuizComplete?: () => void
 }) {
+  const questions = useMemo(() => shuffleQuizQuestions(rawQuestions, quizKey), [rawQuestions, quizKey])
   const prefersReducedMotion = useReducedMotion()
   const [current, setCurrent] = useState(0)
   const [done, setDone] = useState(false)
@@ -2157,7 +2194,7 @@ function PlanetDetailView({
       <div className="relative z-10 mx-auto max-w-6xl px-4 pb-20 pt-20 sm:px-8 sm:pt-24">
         {/* Back link — minimal */}
         <motion.button
-          className="mb-10 flex min-h-10 items-center gap-2 rounded-full border border-white/10 px-3 text-[11px] tracking-[0.24em] text-white/70 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 sm:mb-12 sm:tracking-[0.3em]"
+          className="sticky top-4 z-50 mb-8 flex w-fit min-h-10 items-center gap-2 rounded-full border border-white/10 bg-black/50 px-3 py-2 text-[11px] tracking-[0.24em] text-white/70 backdrop-blur-sm transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 sm:mb-10 sm:tracking-[0.3em]"
           onClick={onClose}
           whileHover={{ x: -3 }}
           aria-label="Back to planet exploration"
@@ -2184,7 +2221,7 @@ function PlanetDetailView({
               enableZoom={false}
               autoRotate
               rotationSpeed={0.06}
-              cameraZ={planet.name === "Saturn" ? 5.2 : 3.4}
+              cameraZ={({ Saturn: 6.5, Uranus: 5.6, Neptune: 5, Jupiter: 4.3 } as Record<string, number>)[planet.name] ?? 3.4}
             />
           </motion.div>
 
@@ -2401,6 +2438,17 @@ export default function SpaceExploration() {
         setResumeLabel(`at ${persisted.selectedPlanetName}`)
       }
     }
+    // Deep link: /?planet=mars opens that planet directly, overriding the resume.
+    const planetParam = new URLSearchParams(window.location.search).get("planet")
+    if (planetParam) {
+      const match = PLANETS.find((p) => p.name.toLowerCase() === planetParam.toLowerCase())
+      if (match) {
+        setSelectedPlanet(match)
+        setFocusedPlanetName(match.name)
+        setDetailTab("info")
+        setView("planet")
+      }
+    }
     setNavStateReady(true)
   }, [])
 
@@ -2421,6 +2469,18 @@ export default function SpaceExploration() {
     if (typeof window === "undefined") return
     window.sessionStorage.setItem("aphelion.detail-tab", detailTab)
   }, [navStateReady, detailTab])
+
+  // Keep the URL in sync so an open planet is shareable (/?planet=mars)
+  useEffect(() => {
+    if (!navStateReady || typeof window === "undefined") return
+    const url = new URL(window.location.href)
+    if (view === "planet" && selectedPlanet) {
+      url.searchParams.set("planet", selectedPlanet.name.toLowerCase())
+    } else {
+      url.searchParams.delete("planet")
+    }
+    window.history.replaceState(null, "", url.toString())
+  }, [navStateReady, view, selectedPlanet])
 
   useEffect(() => {
     if (!navStateReady) return

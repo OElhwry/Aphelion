@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useRef, useMemo } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { CameraControls, Stars } from "@react-three/drei"
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
-import { Ruler, Clock, Compass, ArrowDown, Thermometer, Moon, Weight, Calendar, Star, MousePointer2, RotateCcw, Sparkles } from "lucide-react"
+import { Ruler, Clock, Compass, ArrowDown, Thermometer, Moon, Weight, Calendar, Star, MousePointer2, RotateCcw, Sparkles, ChevronLeft, ChevronRight } from "lucide-react"
 import * as THREE from "three"
 import { PlanetMesh, MilkyWaySkybox, type PlanetKey } from "@/components/planet-3d"
 import { AphelionLogo } from "@/components/aphelion-logo"
@@ -17,6 +17,13 @@ interface TourPlanet {
   facts?: string[]
   color?: string
   accentColor?: string
+  distanceFromSun?: number // million km
+}
+
+// Pretty-print a distance in million km (e.g. 78 → "78 million km", 4495 → "4.5 billion km")
+function formatDistance(millionKm: number): string {
+  if (millionKm >= 1000) return `${(millionKm / 1000).toFixed(1).replace(/\.0$/, "")} billion km`
+  return `${Math.round(millionKm)} million km`
 }
 
 type CompletionMap = Record<string, { factsRead?: boolean; quizCompleted?: boolean }>
@@ -216,16 +223,18 @@ function ClickablePlanet({
   position,
   scale,
   onClick,
+  showMoons = true,
 }: {
   name: string
   position: [number, number, number]
   scale: number
   onClick: () => void
+  showMoons?: boolean
 }) {
   const planetKey = name.toLowerCase() as PlanetKey
   return (
     <group position={position} scale={scale}>
-      <PlanetMesh planetKey={planetKey} autoRotate rotationSpeed={0.05} />
+      <PlanetMesh planetKey={planetKey} autoRotate rotationSpeed={0.05} showMoons={showMoons} />
       <mesh
         onClick={(e) => {
           e.stopPropagation()
@@ -272,6 +281,8 @@ export function TourView({
   const [index, setIndex] = useState(startIdx)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [onboardingStep, setOnboardingStep] = useState(0)
+  const [showConstellations, setShowConstellations] = useState(false)
+  const [showMoons, setShowMoons] = useState(true)
   const current = planets[index]
   const onboardingSteps = [
     {
@@ -342,6 +353,42 @@ export function TourView({
         <AphelionLogo wordmarkClassName="text-[12px] tracking-[0.32em]" iconClassName="h-6 w-6" />
       </div>
 
+      {/* Scene toggles (bottom-left), each with a hover tooltip */}
+      <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2">
+        {[
+          {
+            on: showMoons,
+            toggle: () => setShowMoons((v) => !v),
+            icon: <Moon className="h-4 w-4" />,
+            label: showMoons ? "Hide moons" : "Show moons",
+          },
+          {
+            on: showConstellations,
+            toggle: () => setShowConstellations((v) => !v),
+            icon: <Sparkles className="h-4 w-4" />,
+            label: showConstellations ? "Hide constellations" : "Show constellations",
+          },
+        ].map((b) => (
+          <div key={b.label.split(" ").pop()} className="group relative flex items-center">
+            <button
+              type="button"
+              onClick={b.toggle}
+              aria-label={b.label}
+              aria-pressed={b.on}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/70 backdrop-blur-sm transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80",
+                b.on && "text-cyan-200/90",
+              )}
+            >
+              {b.icon}
+            </button>
+            <span className="pointer-events-none absolute left-11 whitespace-nowrap rounded-md border border-white/10 bg-black/85 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/85 opacity-0 backdrop-blur-sm transition-opacity duration-150 group-hover:opacity-100">
+              {b.label}
+            </span>
+          </div>
+        ))}
+      </div>
+
       {/* 3D Canvas */}
       <div className="absolute inset-0 z-0">
         <Canvas camera={{ position: initialCam, fov: 45, near: 0.05, far: 5000 }} dpr={[1, 2]}>
@@ -352,7 +399,7 @@ export function TourView({
 
           {/* Textured galaxy band behind the procedural stars */}
           <Suspense fallback={null}>
-            <MilkyWaySkybox radius={1200} />
+            <MilkyWaySkybox radius={1200} constellations={showConstellations} />
           </Suspense>
 
           {/* Layered starfield: distant haze + crisp foreground for depth */}
@@ -367,6 +414,7 @@ export function TourView({
                 name={p.name}
                 position={positions[i]}
                 scale={scales[i]}
+                showMoons={showMoons}
                 onClick={() => {
                   triggerHaptic([8, 12, 8])
                   if (i === index) {
@@ -435,6 +483,52 @@ export function TourView({
               {description.map((d, i) => (
                 <p key={i}>{d}</p>
               ))}
+            </div>
+
+            {/* Previous / Next planet — with the real distance you'd travel */}
+            <div className="mt-4 flex items-center justify-end gap-2">
+              {planets[index - 1] && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic()
+                    setIndex(index - 1)
+                  }}
+                  className="group pointer-events-auto flex items-center gap-2 rounded-full border border-white/10 bg-black/30 py-1.5 pl-2 pr-3 backdrop-blur-sm transition hover:border-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80"
+                  aria-label={`Previous planet: ${planets[index - 1].name}`}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5 shrink-0 text-white/60 transition group-hover:text-white" />
+                  <span className="text-left leading-tight">
+                    <span className="block text-[10px] uppercase tracking-[0.18em] text-white/85">{planets[index - 1].name}</span>
+                    {planets[index - 1].distanceFromSun != null && current.distanceFromSun != null && (
+                      <span className="block text-[9px] text-cyan-200/70">
+                        {formatDistance(Math.abs((planets[index - 1].distanceFromSun as number) - current.distanceFromSun))}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              )}
+              {planets[index + 1] && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic()
+                    setIndex(index + 1)
+                  }}
+                  className="group pointer-events-auto flex items-center gap-2 rounded-full border border-white/10 bg-black/30 py-1.5 pl-3 pr-2 backdrop-blur-sm transition hover:border-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80"
+                  aria-label={`Next planet: ${planets[index + 1].name}`}
+                >
+                  <span className="text-right leading-tight">
+                    <span className="block text-[10px] uppercase tracking-[0.18em] text-white/85">{planets[index + 1].name}</span>
+                    {planets[index + 1].distanceFromSun != null && current.distanceFromSun != null && (
+                      <span className="block text-[9px] text-cyan-200/70">
+                        {formatDistance(Math.abs((planets[index + 1].distanceFromSun as number) - current.distanceFromSun))}
+                      </span>
+                    )}
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/60 transition group-hover:text-white" />
+                </button>
+              )}
             </div>
           </motion.div>
         </AnimatePresence>
