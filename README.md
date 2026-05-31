@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://aphelion.website"><img src="https://img.shields.io/badge/live-aphelion.website-2563eb?style=for-the-badge" alt="Live website"></a>
-  <a href="https://github.com/OElhwry/Aphelion/releases/tag/v1.0.2"><img src="https://img.shields.io/badge/version-1.0.2-7c3aed?style=for-the-badge" alt="Version 1.0.2"></a>
+  <a href="https://github.com/OElhwry/Aphelion/releases/tag/v1.1.0"><img src="https://img.shields.io/badge/version-1.1.0-7c3aed?style=for-the-badge" alt="Version 1.1.0"></a>
   <img src="https://img.shields.io/badge/license-private-525252?style=for-the-badge" alt="Private">
 </p>
 
@@ -41,10 +41,16 @@
 ## Features
 
 - **Cinematic intro:** Animated launch sequence into exploration mode.
-- **3D tour mode:** Fly through the solar system in 3D — click an unvisited planet to travel to it; click your current planet to open its detail page.
-- **Orrery mode:** Solar system orbit map with animated planets and clickable exploration.
-- **Planet detail view:** Planet stats, facts, and focused deep-dive pages.
-- **Locked quiz system:** Per-planet quiz flow with one-way progression — answers are locked on selection and cannot be changed or revisited.
+- **Deep-space backdrop:** A NASA-derived Milky Way star-map skybox with slow parallax drift, occasional shooting-star meteors, and a rare comet that sweeps across the sky with a glowing tail.
+- **3D tour mode:** Fly through the solar system in 3D — click an unvisited planet to travel to it; click your current planet to open its detail page. **Previous / Next** controls show the real travel distance between worlds.
+- **True-to-scale planets:** Planet sizes use real diameter ratios (the Sun genuinely dwarfs the rest), while focus framing keeps every world screen-filling when selected.
+- **Moons, rings & lights:** Earth's Moon, Jupiter's four Galilean moons, plus Mars, Saturn, Uranus, Neptune and Pluto's major moons — each on a visible orbit (Triton orbits retrograde, like the real moon). Ring systems for all four giants (Saturn textured; Jupiter, Uranus and Neptune procedurally generated with distinct profiles), and Earth's night-side city lights.
+- **Orrery mode:** A living solar-system orbit map with planets (and their labels) orbiting at realistic relative speeds.
+- **Planet detail view:** Planet stats, facts, and focused deep-dive pages with a sticky back button.
+- **Fair quiz system:** Per-planet quizzes with one-way, locked progression. Answer options are shuffled and balanced so the correct answer is never given away by position or formatting.
+- **Live data:** A "people in space right now" counter, fetched live from the open-notify API.
+- **Scene toggles:** Show/hide moons and constellation guide lines, with hover tooltips.
+- **Shareable deep links:** `/?planet=mars` opens a specific world directly.
 - **Session persistence:** Navigation state and progress persist across refreshes.
 - **Responsive interactions:** Mobile-friendly controls, touch gestures, haptic feedback, and layout tuning.
 
@@ -65,19 +71,25 @@
 ```text
 Aphelion/
 ├── app/
-│   ├── page.tsx          # Main experience: intro, journey, orrery, planet details, quiz flow
-│   ├── layout.tsx        # Root layout + global wrappers
-│   └── globals.css       # Global styles
+│   ├── page.tsx                    # Main experience: intro, journey, orrery, planet details, quiz flow
+│   ├── layout.tsx                  # Root layout, SEO metadata + structured data
+│   ├── sitemap.ts / robots.ts      # Search-engine sitemap (incl. per-planet deep links) + robots
+│   ├── api/people-in-space/        # Server route proxying the live astronaut count
+│   └── globals.css                 # Global styles
 ├── components/
-│   ├── aphelion-logo.tsx # Brand mark/wordmark component
-│   ├── planet-3d.tsx     # 3D planet rendering helpers
-│   ├── tour-view.tsx     # Guided 3D journey with cinematic camera flight
-│   └── ui/               # Reusable UI primitives
+│   ├── aphelion-logo.tsx           # Brand mark/wordmark component
+│   ├── planet-3d.tsx               # Planets, moons, rings, night lights, Milky Way sky, meteors, comet
+│   ├── starfield-background.tsx    # Standalone Milky Way + starfield backdrop
+│   ├── people-in-space.tsx         # Live "people in space" chip
+│   ├── tour-view.tsx               # Guided 3D journey with cinematic camera flight
+│   └── ui/                         # Reusable UI primitives
 ├── hooks/
-│   └── use-mobile.ts     # Mobile breakpoint helper
+│   └── use-mobile.ts               # Mobile breakpoint helper
 └── public/
     ├── aphelion-icon.svg
-    └── textures/planets/ # Planet texture assets (2K)
+    └── textures/
+        ├── planets/                # Planet + moon texture assets (2K)
+        └── space/                  # Milky Way / star-map skybox textures (4K)
 ```
 
 ---
@@ -116,6 +128,18 @@ npm run lint    # Run Next.js lint checks
 ---
 
 ## Changelog
+
+### 1.1.0
+- **Deep-space visuals:** Added a NASA-derived Milky Way star-map skybox with parallax drift, ambient shooting-star meteors, and a rare glowing comet.
+- **True-scale planets:** Planet sizes now use real diameter ratios, with focus framing that keeps each world screen-filling when selected, and a zoom cap so you can't fly inside a planet.
+- **Moons & rings:** Added orbiting moons for Earth, Mars, Jupiter, Saturn, Uranus, Neptune and Pluto (with visible orbit paths; Triton orbits retrograde), ring systems for all four giant planets, and Earth's night-side city lights.
+- **Navigation:** Previous / Next planet controls showing real inter-planet travel distances, plus shareable deep links (`/?planet=mars`).
+- **Living orrery:** Planets and their labels now orbit at realistic relative speeds.
+- **Quiz fairness:** Answer options are shuffled and rebalanced so the correct answer is never telegraphed by position or formatting.
+- **Live data:** "People in space right now" counter via the open-notify API.
+- **Controls:** Toggles (with hover tooltips) to show/hide moons and constellation guide lines; sticky back button on planet pages.
+- **SEO:** Richer metadata, FAQ + WebApplication structured data, a crawlable no-JS content fallback, and per-planet sitemap entries.
+- **Deploy:** Retired the stale GitHub Pages export — Vercel is now the sole deployment.
 
 ### 1.0.2
 - **Planet navigation:** Clicking a planet you are not currently on in the 3D tour now travels the camera directly to that planet rather than opening its detail page. Clicking your current planet still opens the detail view.

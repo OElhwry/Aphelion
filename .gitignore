@@ -7,6 +7,9 @@
 /.next/
 /out/
 
+# static export / old GitHub Pages copy — Vercel is the sole deploy
+/docs
+
 # production
 /build
 
