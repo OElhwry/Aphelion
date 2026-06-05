@@ -856,6 +856,7 @@ function IntroScreen({
   const scrollIntent = useRef(0)
   const touchStartY = useRef<number | null>(null)
   const prefersReducedMotion = useReducedMotion()
+  const isMobile = useIsMobile()
 
   const startJourney = useCallback(() => {
     if (entering) return
@@ -913,7 +914,7 @@ function IntroScreen({
           autoRotate
           rotationSpeed={0.04}
           position={[0, -1.34, 0]}
-          cameraZ={2.95}
+          cameraZ={isMobile ? 3.25 : 2.95}
         />
       </motion.div>
 
