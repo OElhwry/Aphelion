@@ -914,7 +914,7 @@ function IntroScreen({
           autoRotate
           rotationSpeed={0.04}
           position={[0, -1.34, 0]}
-          cameraZ={isMobile ? 3.65 : 2.95}
+          cameraZ={isMobile ? 4.1 : 2.95}
         />
       </motion.div>
 
