@@ -2222,7 +2222,7 @@ function PlanetDetailView({
               enableZoom={false}
               autoRotate
               rotationSpeed={0.06}
-              cameraZ={({ Saturn: 6.5, Uranus: 5.6, Neptune: 5, Jupiter: 4.3 } as Record<string, number>)[planet.name] ?? 3.4}
+              cameraZ={({ Saturn: 6.5, Uranus: 5.6, Neptune: 5, Jupiter: 5.2 } as Record<string, number>)[planet.name] ?? 3.4}
             />
           </motion.div>
 
